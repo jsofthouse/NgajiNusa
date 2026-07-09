@@ -2,6 +2,59 @@
 
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Contoh routes untuk view hasil konversi Blade NgajiNusa
+|--------------------------------------------------------------------------
+| Ini cuma CONTOH biar nama-nama route() yang dipanggil di layout/admin
+| tidak error. Sesuaikan controller & middleware (auth, role, dll) sesuai
+| kebutuhan sebenarnya.
+*/
+
+// ===== PUBLIC =====
 Route::get('/', function () {
-    return view('welcome');
+    return view('pages.home');
+})->name('home');
+
+// ===== AUTH =====
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+// Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// ===== ADMIN (sebaiknya dibungkus middleware auth + prefix, contoh di bawah) =====
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+
+    Route::get('/transaksi', function () {
+        return view('admin.transaksi');
+    })->name('transaksi');
+
+    Route::get('/laporan', function () {
+        return view('admin.laporan');
+    })->name('laporan');
+
+    Route::get('/pengaturan', function () {
+        return view('admin.pengaturan');
+    })->name('pengaturan');
+
+    // Sekarang beneran ada view-nya (diambil dari tab tersembunyi di dashboard_html.html asli)
+    Route::get('/murid', function () {
+        return view('admin.murid');
+    })->name('murid');
+
+    Route::get('/guru', function () {
+        return view('admin.guru');
+    })->name('guru');
+
+    Route::get('/jadwal', function () {
+        return view('admin.jadwal');
+    })->name('jadwal');
+
+    Route::get('/paket', function () {
+        return view('admin.paket');
+    })->name('paket');
 });
