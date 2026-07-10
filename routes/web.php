@@ -21,6 +21,9 @@ Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
 
+// Route::post('/login', [AuthController::class, 'login'])
+//     ->middleware('throttle:5,1'); // 5 attempts per 1 menit
+
 // Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ===== ADMIN (sebaiknya dibungkus middleware auth + prefix, contoh di bawah) =====
