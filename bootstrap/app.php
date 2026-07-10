@@ -15,8 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\LogVisitor::class,
         ]);
-    })
-    ->withMiddleware(function (Middleware $middleware) {
+
         $middleware->trustProxies(at: [
             '173.245.48.0/20',
             '103.21.244.0/22',
