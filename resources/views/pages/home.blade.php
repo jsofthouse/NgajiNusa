@@ -15,7 +15,8 @@
                 <li><a href="#paket">Paket</a></li>
                 <li><a href="#dashboard">Dashboard</a></li>
                 <li><a href="#testimoni">Testimoni</a></li>
-                <li><a href="#" class="btn-primary" onclick="openRegister()"><i class="fas fa-user-plus"></i> Daftar</a></li>
+                <li><a href="#" class="btn-primary" onclick="openRegister()"><i class="fas fa-user-plus"></i>
+                        Daftar</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
                 <i class="fas fa-bars"></i>
@@ -27,7 +28,8 @@
     <section class="hero" id="beranda">
         <div class="container">
             <div class="hero-content">
-                <span class="badge" style="display:inline-block;background:rgba(10,126,59,0.1);color:var(--primary);padding:6px 18px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:16px;">
+                <span class="badge"
+                    style="display:inline-block;background:rgba(10,126,59,0.1);color:var(--primary);padding:6px 18px;border-radius:50px;font-size:0.8rem;font-weight:600;margin-bottom:16px;">
                     <i class="fas fa-graduation-cap"></i> Kursus Online Terbaik
                 </span>
                 <h1>
@@ -66,14 +68,14 @@
                     <i class="fas fa-mosque"></i>
                     <h3>NgajiNusa</h3>
                     <p>Belajar Ngaji Online via Zoom</p>
-                    <div style="margin-top:16px;display:flex;gap:12px;">
-                        <span style="background:rgba(255,255,255,0.15);padding:4px 16px;border-radius:50px;font-size:0.75rem;">
+                    <div class="illustration-tags">
+                        <span class="tag-pill">
                             <i class="fas fa-check"></i> Tahsin
                         </span>
-                        <span style="background:rgba(255,255,255,0.15);padding:4px 16px;border-radius:50px;font-size:0.75rem;">
+                        <span class="tag-pill">
                             <i class="fas fa-check"></i> Tajwid
                         </span>
-                        <span style="background:rgba(255,255,255,0.15);padding:4px 16px;border-radius:50px;font-size:0.75rem;">
+                        <span class="tag-pill">
                             <i class="fas fa-check"></i> Hafalan
                         </span>
                     </div>
@@ -202,10 +204,12 @@
                         </div>
                     </div>
                     <div style="display:flex;gap:12px;">
-                        <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:50px;font-size:0.75rem;">
+                        <span
+                            style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:50px;font-size:0.75rem;">
                             <i class="fas fa-bell"></i> 3
                         </span>
-                        <span style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:50px;font-size:0.75rem;">
+                        <span
+                            style="background:rgba(255,255,255,0.06);padding:6px 14px;border-radius:50px;font-size:0.75rem;">
                             <i class="fas fa-calendar"></i> Hari Ini
                         </span>
                     </div>
@@ -284,7 +288,8 @@
                         <i class="fas fa-star"></i>
                     </div>
                     <blockquote>
-                        "Belajar mengaji jadi lebih mudah dan terstruktur. Gurunya sabar banget, progres saya terpantau jelas."
+                        "Belajar mengaji jadi lebih mudah dan terstruktur. Gurunya sabar banget, progres saya terpantau
+                        jelas."
                     </blockquote>
                     <div class="author">
                         <div class="avatar">FA</div>
@@ -381,42 +386,47 @@
                 <a href="#">Kebijakan Privasi</a>
             </div>
             <div class="footer-bottom">
-                &copy; 2026 NgajiNusa. All rights reserved. Dibuat dengan <i class="fas fa-heart" style="color:#f5a623;"></i> untuk umat.
+                &copy; 2026 NgajiNusa. All rights reserved. Dibuat dengan <i class="fas fa-heart"
+                    style="color:#f5a623;"></i> untuk umat.
             </div>
         </div>
     </footer>
 
     <!-- ===== MODAL REGISTER ===== -->
-    <div id="registerModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
-        <div style="background:var(--white);max-width:520px;width:100%;border-radius:var(--radius);padding:40px 32px;box-shadow:0 40px 80px rgba(0,0,0,0.3);position:relative;max-height:90vh;overflow-y:auto;">
-            <button onclick="closeRegister()" style="position:absolute;top:16px;right:20px;font-size:1.4rem;background:none;color:var(--text-light);">
+    <div id="registerModal"
+        style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+        <div
+            style="background:var(--white);max-width:520px;width:100%;border-radius:var(--radius);padding:40px 32px;box-shadow:0 40px 80px rgba(0,0,0,0.3);position:relative;max-height:90vh;overflow-y:auto;">
+            <button onclick="closeRegister()"
+                style="position:absolute;top:16px;right:20px;font-size:1.4rem;background:none;color:var(--text-light);">
                 <i class="fas fa-times"></i>
             </button>
             <h3 style="font-size:1.6rem;font-weight:800;margin-bottom:8px;">
                 <i class="fas fa-user-plus" style="color:var(--primary);"></i> Daftar Akun
             </h3>
-            <p style="color:var(--text-gray);margin-bottom:24px;font-size:0.95rem;">Isi data diri untuk memulai belajar ngaji online.</p>
+            <p style="color:var(--text-gray);margin-bottom:24px;font-size:0.95rem;">Isi data diri untuk memulai belajar
+                ngaji online.</p>
 
             <form id="registerForm" onsubmit="handleRegister(event)">
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Nama Lengkap</label>
                     <input type="text" id="regName" placeholder="Misal: Ahmad Fauzi" required
-                           style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
+                        style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
                 </div>
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Email</label>
                     <input type="email" id="regEmail" placeholder="email@example.com" required
-                           style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
+                        style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
                 </div>
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Nomor WhatsApp</label>
                     <input type="tel" id="regPhone" placeholder="0812-3456-7890" required
-                           style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
+                        style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;transition:var(--transition);">
                 </div>
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Level Belajar</label>
                     <select id="regLevel" required
-                            style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
+                        style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
                         <option value="">Pilih level...</option>
                         <option value="Hijaiyah">Hijaiyah (Dasar)</option>
                         <option value="Iqra">Iqra 1-6</option>
@@ -428,7 +438,7 @@
                 <div style="margin-bottom:24px;">
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Pilih Paket</label>
                     <select id="regPackage" required
-                            style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
+                        style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
                         <option value="Basic">Basic - Rp 250K/bulan (4 sesi)</option>
                         <option value="Pro" selected>Pro - Rp 450K/bulan (8 sesi) ⭐</option>
                         <option value="Premium">Premium - Rp 800K/bulan (12 sesi)</option>
@@ -451,7 +461,8 @@
     </div>
 
     <!-- ===== TOAST NOTIFICATION ===== -->
-    <div id="toast" style="position:fixed;bottom:30px;right:30px;background:var(--text-dark);color:var(--white);padding:16px 28px;border-radius:var(--radius-sm);box-shadow:0 12px 40px rgba(0,0,0,0.2);z-index:3000;display:none;align-items:center;gap:12px;font-weight:500;max-width:400px;border-left:4px solid var(--primary-light);">
+    <div id="toast"
+        style="position:fixed;bottom:30px;right:30px;background:var(--text-dark);color:var(--white);padding:16px 28px;border-radius:var(--radius-sm);box-shadow:0 12px 40px rgba(0,0,0,0.2);z-index:3000;display:none;align-items:center;gap:12px;font-weight:500;max-width:400px;border-left:4px solid var(--primary-light);">
         <i class="fas fa-check-circle" style="color:var(--primary-light);"></i>
         <span id="toastMessage">Berhasil!</span>
     </div>
@@ -459,7 +470,7 @@
 @endsection
 
 @push('scripts')
-<script>
+    <script>
         // ===== NAVBAR TOGGLE =====
         document.getElementById('navToggle').addEventListener('click', function() {
             document.getElementById('navLinks').classList.toggle('open');
@@ -512,7 +523,13 @@
             document.getElementById('registerSuccess').style.display = 'block';
 
             // Log data (for demo)
-            console.log('Registrasi:', { name, email, phone, level, pkg });
+            console.log('Registrasi:', {
+                name,
+                email,
+                phone,
+                level,
+                pkg
+            });
 
             showToast(`Pendaftaran ${name} berhasil! Admin akan menghubungi Anda.`);
         }
@@ -546,7 +563,10 @@
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
                     e.preventDefault();
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
                 }
             });
         });
@@ -560,5 +580,5 @@
                 navbar.style.boxShadow = 'none';
             }
         });
-</script>
+    </script>
 @endpush
