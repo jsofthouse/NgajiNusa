@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MuridController;
 
 /*
@@ -18,6 +19,9 @@ Route::get('/', function () {
 })->name('home');
 
 // ===== PENDAFTARAN MURID (baru) =====
+Route::get('/daftar', [MuridController::class, 'create'])
+    ->name('murid.create');
+
 Route::post('/daftar', [MuridController::class, 'store'])
     ->middleware('throttle:10,1') // maks 10 request per menit per IP, cegah spam
     ->name('murid.store');
@@ -27,10 +31,9 @@ Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
 
-// Route::post('/login', [AuthController::class, 'login'])
-//     ->middleware('throttle:5,1'); // 5 attempts per 1 menit
-
-// Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/login', [AuthController::class, 'create'])->name('login');
+Route::post('/login', [AuthController::class, 'store']);
+Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
 // ===== ADMIN (sebaiknya dibungkus middleware auth + prefix, contoh di bawah) =====
 Route::prefix('admin')->name('admin.')->group(function () {
