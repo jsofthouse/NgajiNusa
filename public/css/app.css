@@ -690,6 +690,9 @@
             .hero-image .illustration {
                 max-width: 400px;
             }
+            .illustration-tags {
+                flex-wrap: wrap;
+            }
             .footer .container {
                 grid-template-columns: 1fr 1fr;
             }
@@ -715,7 +718,6 @@
             .nav-toggle {
                 display: block;
             }
-
             .hero {
                 padding: 120px 0 60px;
             }
@@ -736,6 +738,9 @@
             .mock-table .row .hide-mobile {
                 display: none;
             }
+            .illustration-tags {
+                flex-wrap: wrap;
+            }
         }
 
         @media (max-width: 480px) {
@@ -751,7 +756,6 @@
             }
             .illustration-tags {
                 gap: 6px;
-                flex-wrap: wrap;
             }
             .tag-pill {
                 font-size: 0.7rem;
