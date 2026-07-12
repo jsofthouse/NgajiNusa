@@ -520,35 +520,103 @@
             if (e.target === this) closeRegister();
         });
 
-        // ===== REGISTER HANDLER =====
+        // ===== REGISTER HANDLER (revisi: validasi + submit ke backend + redirect WA) =====
         function handleRegister(e) {
             e.preventDefault();
 
-            const name = document.getElementById('regName').value.trim();
+            const nama = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const level = document.getElementById('regLevel').value;
-            const pkg = document.getElementById('regPackage').value;
+            const whatsapp = document.getElementById('regPhone').value.trim();
+            const level_belajar = document.getElementById('regLevel').value;
+            const paket = document.getElementById('regPackage').value;
 
-            if (!name || !email || !phone || !level || !pkg) {
-                showToast('Mohon lengkapi semua data!', 'error');
+            // Validasi ringan front-end (server tetap validasi ulang, ini cuma UX cepat)
+            if (!nama || nama.length < 3) {
+                showToast('Nama lengkap minimal 3 karakter!', 'error');
+                return;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showToast('Format email tidak valid!', 'error');
+                return;
+            }
+            const waRegex = /^(\+?62|0)8[0-9]{8,12}$/;
+            if (!waRegex.test(whatsapp.replace(/[-\s]/g, ''))) {
+                showToast('Format nomor WhatsApp tidak valid!', 'error');
+                return;
+            }
+            if (!level_belajar) {
+                showToast('Pilih level belajar terlebih dahulu!', 'error');
+                return;
+            }
+            if (!paket) {
+                showToast('Pilih paket terlebih dahulu!', 'error');
                 return;
             }
 
-            // Simulate success
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('registerSuccess').style.display = 'block';
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
-            // Log data (for demo)
-            console.log('Registrasi:', {
-                name,
-                email,
-                phone,
-                level,
-                pkg
-            });
+            fetch('/daftar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    body: JSON.stringify({
+                        nama,
+                        email,
+                        whatsapp: whatsapp.replace(/[-\s]/g, ''),
+                        level_belajar,
+                        paket
+                    })
+                })
+                .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        const firstError = data.errors ? Object.values(data.errors)[0][0] :
+                            'Pendaftaran gagal, coba lagi.';
+                        showToast(firstError, 'error');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHtml;
+                        return;
+                    }
 
-            showToast(`Pendaftaran ${name} berhasil! Admin akan menghubungi Anda.`);
+                    // Sukses -> tampilkan state sukses di modal
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('registerSuccess').style.display = 'block';
+                    showToast(`Pendaftaran ${data.data.nama} berhasil!`);
+
+                    // Susun pesan WA otomatis
+                    const waNumber = data.wa_admin_number;
+                    const pesan =
+                        `Assalamu'alaikum, saya sudah mendaftar di NgajiNusa.
+
+Nama: ${data.data.nama}
+Paket: ${data.data.paket}
+Level: ${data.data.level_belajar}
+
+Mohon info untuk langkah pembayaran selanjutnya. Terima kasih.`;
+
+                    if (waNumber) {
+                        const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(pesan)}`;
+                        // Buka tab baru supaya modal sukses tetap kelihatan di tab asal
+                        window.open(waLink, '_blank');
+                    } else {
+                        showToast('Nomor WA admin belum diatur, hubungi admin secara manual.', 'error');
+                    }
+
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                })
+                .catch(() => {
+                    showToast('Terjadi kesalahan jaringan, coba lagi.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                });
         }
 
         // ===== TOAST =====
