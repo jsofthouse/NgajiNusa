@@ -5,16 +5,32 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreMuridRequest;
 use App\Models\AdminSetting;
 use App\Models\Murid;
+use App\Services\ReferralAgentService;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class MuridController extends Controller
 {
-    public function store(StoreMuridRequest $request)
+    /**
+     * Tampilkan halaman pendaftaran (GET /daftar). Kalau ada ?ref=KODE,
+     * validasi & simpan ke cookie lewat ReferralAgentService.
+     */
+    public function create(Request $request, ReferralAgentService $referralAgentService): View
+    {
+        $referralAgentService->captureFromRequest($request);
+
+        return view('pages.home');
+    }
+
+    public function store(StoreMuridRequest $request, ReferralAgentService $referralAgentService)
     {
         $validated = $request->validated();
 
         // Normalisasi nomor WA ke format 62xxxx (biar konsisten di DB & buat link wa.me nanti)
         $validated['whatsapp'] = $this->normalizeWhatsapp($validated['whatsapp']);
         $validated['status'] = Murid::STATUS_DAFTAR;
+        // Ambil referral agent dari cookie (kalau ada) — user tidak input manual
+        $validated['referral_agent_id'] = $referralAgentService->resolveAgentIdFromCookie($request);
 
         $murid = Murid::create($validated);
 
