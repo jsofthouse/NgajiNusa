@@ -13,7 +13,7 @@
             <ul class="nav-links" id="navLinks">
                 <li><a href="#fitur">Fitur</a></li>
                 <li><a href="#paket">Paket</a></li>
-                <li><a href="#dashboard">Dashboard</a></li>
+                {{-- <li><a href="#dashboard">Dashboard</a></li> --}}
                 <li><a href="#testimoni">Testimoni</a></li>
                 <li><a href="#" class="btn-primary" onclick="openRegister()"><i class="fas fa-user-plus"></i>
                         Daftar</a></li>
@@ -139,7 +139,7 @@
                 <!-- Paket 1 -->
                 <div class="pricing-card">
                     <h4>Basic</h4>
-                    <div class="price">Rp 250K <span>/ bulan</span></div>
+                    <div class="price">Rp 300K <span>/ bulan</span></div>
                     <div class="sub">4 sesi per bulan</div>
                     <ul>
                         <li><i class="fas fa-check"></i> 4x pertemuan 60 menit</li>
@@ -154,7 +154,7 @@
                 <div class="pricing-card popular">
                     <span class="popular-badge">⭐ POPULER</span>
                     <h4>Pro</h4>
-                    <div class="price">Rp 450K <span>/ bulan</span></div>
+                    <div class="price">Rp 550K <span>/ bulan</span></div>
                     <div class="sub">8 sesi per bulan</div>
                     <ul>
                         <li><i class="fas fa-check"></i> 8x pertemuan 60 menit</li>
@@ -203,7 +203,7 @@
     </section>
 
     <!-- ===== DASHBOARD PREVIEW ===== -->
-    <section class="dashboard-preview" id="dashboard">
+    {{-- <section class="dashboard-preview" id="dashboard">
         <div class="container">
             <div class="section-header">
                 <span class="badge"><i class="fas fa-chart-pie"></i> Dashboard</span>
@@ -284,7 +284,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> --}}
 
     <!-- ===== TESTIMONIAL ===== -->
     <section class="testimonials" id="testimoni">
@@ -455,8 +455,8 @@
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Pilih Paket</label>
                     <select id="regPackage" required
                         style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
-                        <option value="Basic">Basic - Rp 250K/bulan (4 sesi)</option>
-                        <option value="Pro" selected>Pro - Rp 450K/bulan (8 sesi) ⭐</option>
+                        <option value="Basic">Basic - Rp 300K/bulan (4 sesi)</option>
+                        <option value="Pro" selected>Pro - Rp 550K/bulan (8 sesi) ⭐</option>
                         <option value="Premium">Premium - Rp 800K/bulan (12 sesi)</option>
                         <option value="Platinum">Platinum - Rp 1,2jt/bulan (20 sesi)</option>
                     </select>
