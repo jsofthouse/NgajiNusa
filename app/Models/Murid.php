@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Murid extends Model
 {
@@ -15,7 +16,13 @@ class Murid extends Model
         'level_belajar',
         'paket',
         'status',
+        'referral_agent_id',
     ];
+
+    public function referralAgent(): BelongsTo
+    {
+        return $this->belongsTo(ReferralAgent::class);
+    }
 
     // Daftar valid, dipakai juga di Form Request validasi
     public const LEVEL_OPTIONS = [
