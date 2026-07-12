@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MuridController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('pages.home');
 })->name('home');
+
+// ===== PENDAFTARAN MURID (baru) =====
+Route::post('/daftar', [MuridController::class, 'store'])
+    ->middleware('throttle:10,1') // maks 10 request per menit per IP, cegah spam
+    ->name('murid.store');
 
 // ===== AUTH =====
 Route::get('/login', function () {
