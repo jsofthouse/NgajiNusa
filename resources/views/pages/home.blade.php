@@ -182,6 +182,22 @@
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
                 </div>
+
+                <!-- Paket 4 -->
+                <div class="pricing-card">
+                    <h4>Platinum</h4>
+                    <div class="price">Rp 1,2jt <span>/ bulan</span></div>
+                    <div class="sub">20 sesi + konsultasi</div>
+                    <ul>
+                        <li><i class="fas fa-check"></i> 20x pertemuan 60 menit</li>
+                        <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid)</li>
+                        <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
+                        <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
+                        <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
+                        <li><i class="fas fa-check"></i> Prioritas jadwal</li>
+                    </ul>
+                    <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
+                </div>
             </div>
         </div>
     </section>
@@ -442,6 +458,7 @@
                         <option value="Basic">Basic - Rp 250K/bulan (4 sesi)</option>
                         <option value="Pro" selected>Pro - Rp 450K/bulan (8 sesi) ⭐</option>
                         <option value="Premium">Premium - Rp 800K/bulan (12 sesi)</option>
+                        <option value="Platinum">Platinum - Rp 1,2jt/bulan (20 sesi)</option>
                     </select>
                 </div>
                 <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:16px;">
