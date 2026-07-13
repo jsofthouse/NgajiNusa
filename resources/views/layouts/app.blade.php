@@ -69,7 +69,5 @@
 
     @yield('content')
 
-    @stack('scripts')
-</body>
-
-</html>
+    <script>
+        // Bersihin query 

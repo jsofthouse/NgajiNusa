@@ -11,6 +11,7 @@ class ReferralAgent extends Model
 
     protected $fillable = [
         'nama',
+        'email',
         'whatsapp',
         'kode',
         'status',
@@ -19,8 +20,4 @@ class ReferralAgent extends Model
     public const STATUS_ACTIVE = 'Aktif';
     public const STATUS_INACTIVE = 'Nonaktif';
 
-    public function murid(): HasMany
-    {
-        return $this->hasMany(Murid::class);
-    }
-}
+    // Dipakai ulang di Form Request validasi (StoreReferralAgentRequest/Update

@@ -31,6 +31,7 @@
             <li><a href="{{ route('admin.jadwal') }}" class="{{ request()->routeIs('admin.jadwal') ? 'active' : '' }}"><i class="fas fa-calendar-alt"></i> Jadwal</a></li>
             <li><a href="{{ route('admin.transaksi') }}" class="{{ request()->routeIs('admin.transaksi') ? 'active' : '' }}"><i class="fas fa-credit-card"></i> Transaksi</a></li>
             <li><a href="{{ route('admin.paket') }}" class="{{ request()->routeIs('admin.paket') ? 'active' : '' }}"><i class="fas fa-tags"></i> Paket</a></li>
+            <li><a href="{{ route('admin.referral-agent.index') }}" class="{{ request()->routeIs('admin.referral-agent.*') ? 'active' : '' }}"><i class="fas fa-user-tie"></i> Referral Agent</a></li>
             <li class="menu-label">Lainnya</li>
             <li><a href="{{ route('admin.laporan') }}" class="{{ request()->routeIs('admin.laporan') ? 'active' : '' }}"><i class="fas fa-chart-bar"></i> Laporan</a></li>
             <li><a href="{{ route('admin.pengaturan') }}" class="{{ request()->routeIs('admin.pengaturan') ? 'active' : '' }}"><i class="fas fa-cog"></i> Pengaturan</a></li>
@@ -79,12 +80,4 @@
         // ===== LOGOUT ===== (satu-satunya definisi, dipakai semua halaman admin)
         function confirmLogout(e) {
             e.preventDefault();
-            if (confirm('Apakah Anda yakin ingin logout?')) {
-                document.getElementById('logoutForm').submit();
-            }
-        }
-    </script>
-
-    @stack('scripts')
-</body>
-</html>
+    

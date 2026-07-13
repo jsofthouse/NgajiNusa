@@ -1,0 +1,69 @@
+/* ===== REFERRAL AGENT - style tambahan di atas admin-dashboard.css ===== */
+
+.ra-alert {
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.ra-alert-success {
+    background: #e6f7ec;
+    color: #1c7c3f;
+    border: 1px solid #b9e8c9;
+}
+
+.ra-kode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ra-kode code {
+    background: #f0f4f0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.ra-link-text {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    color: var(--text-light);
+}
+
+.ra-copy-btn {
+    border: 1px solid #dfe6df;
+    background: var(--white);
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.ra-copy-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--white);
+}
+
+.ra-error {
+    display: block;
+    color: #d64545;
+    font-size: 0.78rem;
+    margin-top: 4px;
+}

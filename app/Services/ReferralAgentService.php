@@ -13,13 +13,18 @@ class ReferralAgentService
 
     private const COOKIE_MINUTES = 30 * 24 * 60; // 30 hari
 
+    // Nama query param di URL referral (mis. domain.com/?share_via=KODE).
+    // Ditaruh sebagai konstanta biar kalau nanti mau ganti (?via=, dll) cukup ubah di satu tempat.
+    // Business logic-nya tetap "Referral" — ini cuma nama parameter yang tampil di URL.
+    public const QUERY_PARAM = 'share_via';
+
     /**
-     * Validasi ?ref=KODE di request, simpan ke cookie kalau valid & aktif.
+     * Validasi ?share_via=KODE di request, simpan ke cookie kalau valid & aktif.
      * Kode invalid diabaikan begitu saja — tidak pernah disimpan.
      */
     public function captureFromRequest(Request $request): void
     {
-        $kode = $request->query('ref');
+        $kode = $request->query(self::QUERY_PARAM);
 
         if (! $kode) {
             return;
@@ -52,15 +57,4 @@ class ReferralAgentService
     }
 
     /**
-     * Generate kode referral acak (huruf+angka) yang unik.
-     * Sengaja acak, bukan dari nama, biar tidak gampang ketebak.
-     */
-    public function generateUniqueCode(int $length = 8): string
-    {
-        do {
-            $code = strtoupper(Str::random($length));
-        } while (ReferralAgent::where('kode', $code)->exists());
-
-        return $code;
-    }
-}
+     * Generate kode referral acak (hu

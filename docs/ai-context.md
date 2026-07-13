@@ -1,184 +1,163 @@
-# AI Context — Ngaji Nusa
+# AI Context — NgajiNusa
 
-Single-file onboarding doc for any AI assistant (Claude, ChatGPT, Gemini, Copilot, Cursor, etc.) working in this repo. Read this first, before `CLAUDE.md` or the other `docs/*.md` files — it supersedes them where they conflict (see §9). Keep it updated whenever architecture, conventions, or features change.
+> **Single source of truth (SSOT) for any AI assistant** (Claude, ChatGPT, Gemini, Copilot, Cursor, dll) yang bekerja di repo ini.
+> Baca file ini **lebih dulu** sebelum `CLAUDE.md` atau `docs/*.md` lain. Jika terjadi konflik dokumentasi, **file ini menang** (lihat §17 Documentation Map), dan implementasi kode menang atas dokumentasi mana pun.
+> Semua isi di bawah sudah diverifikasi terhadap kode nyata. Tidak ada asumsi. Jika sesuatu belum dipastikan, ditandai eksplisit `[OPEN]`.
+>
+> **Last verified against codebase:** 2026-07-13.
 
-## 1. What this project is
+---
 
-Ngaji Nusa is a registration platform for online Islamic study sessions (*pengajian*) held via Zoom, open to the general public across all ages.
+## 1. Project Overview
 
-- **Murid** = student registering for online ngaji (not an employee/payroll concept).
-- Payment is semi-subscription: billed monthly, **manual** — not auto-charged.
-- Solo full-stack developer, no other contributors. Treat the human as a close, senior peer, not a client.
+**Tujuan.** NgajiNusa adalah platform pendaftaran untuk kelas ngaji (pengajian) online yang diselenggarakan via Zoom, terbuka untuk masyarakat umum lintas usia. Fokus produk saat ini: **landing page publik + form pendaftaran murid**, plus **panel admin** untuk mengelola operasional.
 
-## 2. Stack
+**Ruang lingkup saat ini (yang benar-benar ada di kode):**
 
-| Layer | Choice |
-|---|---|
-| Framework | Laravel 13 |
-| Language | PHP 8.5 (composer.json currently pins `^8.3`) |
-| Database | MariaDB in production; **SQLite** locally (`database/database.sqlite`) |
-| Frontend | Blade + Bootstrap 5 + vanilla JS — no Livewire, Vue, or React |
-| Build tool | Vite + Tailwind 4 devDependency present, but Bootstrap 5 is the actual UI system in views |
-| Server | Ubuntu + Nginx + PHP-FPM |
-| Auth | **Implemented**, session-based, via Laravel's built-in `Auth` facade — not Breeze (Breeze still isn't in `composer.json`). `AuthController` + `LoginRequest` handle `GET/POST /login` and `POST /logout`, rate-limited 5 attempts/min per email+IP. No role/permission checks wired up yet. |
-| Payment | **Not yet implemented.** Midtrans is referenced only as static text in `resources/views/admin/pengaturan.blade.php`, no SDK, no config, no controller. |
-| App sits behind Cloudflare | `bootstrap/app.php` configures `trustProxies` with Cloudflare's IP ranges |
+- Landing page publik (`pages/home.blade.php`) dengan modal form pendaftaran.
+- Endpoint pendaftaran murid publik (`POST /daftar`) yang menyimpan ke DB dan mengembalikan JSON + nomor WA admin.
+- Sistem referral berbasis kode (backend + cookie capture), **tanpa UI admin**.
+- Autentikasi admin (login/logout, session-based) dan proteksi semua route `admin.*`.
+- Halaman-halaman admin masih berupa **view statis/mock** (belum ada controller/data dinamis) kecuali autentikasinya.
+- Middleware pencatat kunjungan (`LogVisitor`).
+
+**Di luar ruang lingkup / belum dibangun:** pembayaran, notifikasi WhatsApp/email, integrasi Zoom, role/permission, reporting, CRUD admin yang sesungguhnya.
+
+**Istilah domain (bahasa Indonesia dipakai konsisten di kode, DB, dan UI — jangan diterjemahkan):**
+
+- **Murid** = calon/peserta yang mendaftar ngaji online. Bukan konsep karyawan/payroll.
+- **Paket** = paket langganan belajar (Basic, Pro, Premium, Platinum).
+- **Level belajar** = tingkat materi (Hijaiyah, Iqra, Tahsin, Tajwid, Hafalan).
+- **Referral Agent** = agen yang punya kode referral; murid yang daftar via `?share_via=KODE` diasosiasikan ke agen tsebut.
+- **Guru** = pengajar (baru ada view mock, belum ada model/tabel).
+- **Pengajian / Ngaji** = sesi belajar.
+
+**Business flow singkat (yang sudah jalan):**
+
+1. Pengunjung membuka landing page → `GET /` atau `GET /daftar`.
+2. Jika ada `?share_via=KODE` valid & aktif → kode disimpan ke cookie `referral_code` (30 hari).
+3. Pengunjung mengisi modal pendaftaran (nama, email, WA, level, paket) → JS `fetch('POST /daftar')` (JSON + CSRF).
+4. Server memvalidasi (`StoreMuridRequest`), menormalkan nomor WA ke `62xxxx`, set `status = 'Daftar'`, resolve `referral_agent_id` dari cookie, simpan `Murid`.
+5. Response JSON berisi data murid + `wa_admin_number` (murid diarahkan chat WA admin untuk proses lanjutan — **manual**).
+6. Pembayaran & aktivasi = **proses manual bulanan di luar sistem** (belum ada modul pembayaran).
+
+**Model bisnis pembayaran:** semi-subscription, ditagih bulanan, **manual — tidak auto-charge**. Jangan pernah membangun logika auto-billing tanpa konfirmasi owner.
+
+**Tim:** solo full-stack developer, tanpa kontributor lain. Perlakukan owner sebagai rekan senior yang akrab.
+
+---
+
+## 2. Technology Stack
+
+| Layer                             | Pilihan                                                                      | Catatan verifikasi                                                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework                         | **Laravel 13** (`laravel/framework: ^13.8`)                                  | `composer.json`                                                                                                                                                                                    |
+| Bahasa                            | **PHP 8.5** (target) — `composer.json` masih pin `php: ^8.3`                 | Ada ketidaksesuaian minor: CLAUDE.md bilang 8.5, composer izinkan ≥8.3                                                                                                                             |
+| Database (produksi & lokal aktif) | **MySQL / MariaDB**                                                          | `.env` → `DB_CONNECTION=mysql`, `DB_DATABASE=ngaji-nusa`, host `127.0.0.1:3306`, user `root`. Dev lokal jalan di **Laragon** (path `C:\laragon\www\ngaji-nusa`, `APP_URL=http://ngaji-nusa.test/`) |
+| Database (opsional/tidak aktif)   | file `database/database.sqlite` ada di repo                                  | **Tidak dipakai** oleh koneksi aktif. Jangan asumsikan lokal = SQLite                                                                                                                              |
+| Frontend                          | **Blade + Bootstrap 5 + vanilla JS**                                         | Tidak ada Livewire/Vue/React                                                                                                                                                                       |
+| Build tool                        | **Vite 8** + Tailwind 4 (devDependency)                                      | Tailwind terpasang sebagai dev tool, tapi **UI nyata di view pakai CSS custom + Bootstrap 5**, bukan utility Tailwind                                                                              |
+| Server (produksi)                 | **Ubuntu + Nginx + PHP-FPM**                                                 | `docs/deployment.md`                                                                                                                                                                               |
+| Proxy                             | App di belakang **Cloudflare**                                               | `bootstrap/app.php` set `trustProxies` ke IP range Cloudflare                                                                                                                                      |
+| Auth                              | **Built-in Laravel `Auth` facade** (session), hand-rolled — **BUKAN Breeze** | `AuthController` + `LoginRequest`. Breeze tidak terpasang                                                                                                                                          |
+| Locale                            | `APP_LOCALE=en`, `APP_TIMEZONE=Asia/Jakarta`                                 | UI teks Indonesia, tapi locale app default `en`                                                                                                                                                    |
+
+**Package penting (composer require):** `laravel/framework ^13.8`, `laravel/tinker ^3.0`.
+**Dev deps:** `laravel/pint` (code style), `laravel/pail` (log tail), `laravel/pao`, `nunomaduro/collision`, `phpunit/phpunit ^12`, `mockery`, `fakerphp/faker`.
+**Node devDeps:** `vite ^8`, `laravel-vite-plugin ^3.1`, `@tailwindcss/vite ^4`, `tailwindcss ^4`, `concurrently`.
+
+**Third-party / external service:** **belum ada satu pun yang benar-benar terhubung** (lihat §15). Semua referensi Midtrans/Zoom/WhatsApp API di view = placeholder/mock.
+
+**Driver runtime (dari `.env` lokal):** session `database`, cache `database`, queue `database`, filesystem `local`, mail `log` (mail hanya masuk ke log file, tidak terkirim).
+
+---
 
 ## 3. Architecture
 
+**Pola arsitektur (target):**
+
 ```
-Route → Controller → Service → Repository (only if already used) → Model
+Route → Controller → Service → (Repository hanya jika sudah dipakai) → Model
 ```
 
-- **Controller**: validate via Form Request, call Service, return response. Stays thin.
-- **Service**: business logic, transactions, reusable. Business logic belongs here.
-- **Model**: persistence only, no business logic.
-- **No Repository pattern** — deliberate decision (`docs/decisions.md`).
+- **Controller**: tipis. Validasi via Form Request, panggil Service, kembalikan response.
+- **Service**: tempat business logic, transaksi DB, kode reusable.
+- **Model**: persistence/Eloquent saja, tanpa business logic.
+- **Repository pattern: TIDAK dipakai** (keputusan sengaja, `docs/decisions.md`). Jangan tambahkan tanpa izin.
 
-**⚠️ Reality gap — read before writing code:** `app/Services` does not exist yet. All logic (e.g. WhatsApp number normalization) currently lives directly in `MuridController`. Treat the Service layer as the target for *new, non-trivial* logic. Do not refactor existing controller logic into a Service speculatively — ask first if unsure.
+**Dependency flow nyata (per 2026-07-13):**
 
-Validation always goes through Form Request classes (`app/Http/Requests`), never inline in the controller.
+- `MuridController` meng-inject `ReferralAgentService` (constructor/method injection) → contoh penerapan Service layer yang benar.
+- Normalisasi nomor WA (`normalizeWhatsapp()`) masih **di dalam `MuridController`** (private method), belum dipindah ke Service. Ini diterima apa adanya — **jangan refactor spekulatif** tanpa diminta.
+- `AuthController` memakai `LoginRequest` (yang menampung logika rate-limit + `authenticate()` sendiri), bukan Service.
 
-## 4. Folder structure (actual, not aspirational)
+**Layer responsibility:**
+
+- Validasi **selalu** lewat Form Request (`app/Http/Requests`), **tidak pernah** inline di controller.
+- Business logic baru yang non-trivial → letakkan di Service.
+- Konstanta domain (opsi valid) hidup di **Model** sebagai `const` (mis. `Murid::LEVEL_OPTIONS`) dan dipakai ulang di Form Request.
+
+**Coding pattern khas project ini:**
+
+- Endpoint publik pendaftaran mengembalikan **JSON** (bukan redirect) — `StoreMuridRequest::failedValidation()` sengaja di-override agar error selalu JSON 422 `{success:false, errors:{...}}`.
+- Settings global disimpan sebagai key-value di tabel `admin_settings`, diakses via helper statis `AdminSetting::get($key, $default)` (pengecualian pragmatis terhadap aturan "hindari static").
+
+---
+
+## 4. Folder Structure (aktual, bukan aspirasional)
 
 ```
 app/
-  Http/Controllers/    Controller.php (base), MuridController.php, AuthController.php
-  Http/Middleware/      LogVisitor.php
-  Http/Requests/        StoreMuridRequest.php, StorePostRequest.php (orphaned — see §8), LoginRequest.php
-  Models/                AdminSetting.php, Murid.php, User.php, VisitorLog.php, ReferralAgent.php
-  Services/              ReferralAgentService.php
-  Providers/
+  Http/
+    Controllers/   Controller.php (abstract base, kosong), MuridController.php, AuthController.php
+    Middleware/    LogVisitor.php
+    Requests/      LoginRequest.php, StoreMuridRequest.php, StorePostRequest.php (orphan — lihat §13)
+  Models/          Murid.php, ReferralAgent.php, AdminSetting.php, VisitorLog.php, User.php
+  Services/        ReferralAgentService.php  (satu-satunya service)
+  Providers/       AppServiceProvider.php (kosong, boot/register belum dipakai)
+bootstrap/
+  app.php          registrasi middleware global (LogVisitor), trustProxies Cloudflare, JSON exception utk api/*
+config/            konfigurasi Laravel standar (auth guard 'web'/session/provider users)
 database/
-  migrations/            users/cache/jobs (Laravel defaults), visitor_logs, murid, admin_settings, referral_agents, murid.referral_agent_id
-  factories/, seeders/    AdminSettingSeeder.php (not yet called from DatabaseSeeder::run() — see §8)
+  migrations/      users+cache+jobs (default), visitor_logs, murid, admin_settings, referral_agents, add_referral_agent_id_to_murid
+  seeders/         DatabaseSeeder.php (buat 1 Test User), AdminSettingSeeder.php (BELUM dipanggil — lihat §13)
+  factories/       UserFactory (default)
+  database.sqlite  ada tapi tidak dipakai koneksi aktif
 resources/views/
-  admin/                 dashboard, murid, guru, jadwal, paket, transaksi, laporan, pengaturan, partials/
-  auth/login.blade.php
-  layouts/               app.blade.php, admin.blade.php, auth.blade.php
-  pages/home.blade.php
-  welcome.blade.php     (Laravel default, unused)
+  pages/home.blade.php        landing page publik + modal pendaftaran (669 baris)
+  auth/login.blade.php        halaman login (267 baris)
+  admin/                      dashboard, murid, guru, jadwal, paket, transaksi, laporan, pengaturan (semua view mock/statis)
+  admin/partials/section-tabs.blade.php
+  layouts/                    app.blade.php (publik), admin.blade.php (shell admin + logout form), auth.blade.php
+  welcome.blade.php           default Laravel, tidak dipakai
 routes/
-  web.php, console.php
+  web.php          semua route (publik, auth, admin group)
+  console.php      command 'inspire' (default)
 tests/
-  Feature/ExampleTest.php, Unit/ExampleTest.php (both still the Laravel scaffolding defaults — no real tests yet)
-docs/                   this file + legacy per-topic docs (see §9)
-CLAUDE.md               project-wide instructions for AI assistants — do not edit without being asked
-PROJECT_MEMORY.md       working notes from a prior codebase audit — do not overwrite
+  Feature/ExampleTest.php, Unit/ExampleTest.php   masih scaffolding default — belum ada test nyata
+docs/              file ini + dokumen legacy per-topik (lihat §17)
+CLAUDE.md          instruksi wajib untuk AI assistant — jangan diedit tanpa diminta
+PROJECT_MEMORY.md  catatan audit AI sebelumnya — jangan ditimpa
 ```
 
-`app/Services` now exists (`ReferralAgentService`). `app/Repositories` and `app/Policies` still don't.
-
-## 5. Coding conventions
-
-- PSR-12. Strict typing where practical. Functions under ~50 lines. Prefer early return over nested ifs. Prefer dependency injection over static methods (existing `AdminSetting::get()` static helper is a pragmatic exception, not a pattern to expand). No unused imports, no duplicated code.
-- Eloquent only, no raw SQL, no `SELECT *`. Eager-load to prevent N+1 (`with()`, `load()`, `paginate()`).
-- Domain terms stay in **Indonesian** — `Murid`, `paket`, `level_belajar`, etc. Do not translate to English in code, DB, or UI.
-
-| Type | Convention | Example |
-|---|---|---|
-| Controller | `PascalCase` + `Controller` | `MuridController` |
-| Service | `PascalCase` + `Service` | `UserService` |
-| Form Request | `Store/Update` + Model + `Request` | `StoreMuridRequest` |
-| Model | PascalCase singular | `Murid`, `AdminSetting` |
-| Migration | snake_case, descriptive | `create_murid_table` |
-| Method | camelCase | `normalizeWhatsapp()` |
-| DB columns/tables | snake_case | `wa_admin_number` |
-| Route | kebab-case | `/daftar` |
-
-## 6. Data model (current migrations)
-
-- **`users`** — Laravel default auth table (name, email, password) + standard `password_reset_tokens`/`sessions`.
-- **`murid`** — `nama`, `email`, `whatsapp` (stored as `62xxxxxxxxxx`), `level_belajar`, `paket`, `status` (default `Daftar`). Indexed on `status`, `email`.
-  - `Murid::LEVEL_OPTIONS` = Hijaiyah, Iqra, Tahsin, Tajwid, Hafalan.
-  - `Murid::PAKET_OPTIONS` = Basic, Pro, Premium, Platinum.
-  - `Murid::STATUS_DAFTAR` = `'Daftar'` is the only defined status constant so far; migration comment notes more statuses (Aktif, Pending, Nonaktif, etc.) are coming in a later phase — **do not invent status values**, check with the owner.
-- **`admin_settings`** — generic key/value store, e.g. `wa_admin_number`. Accessed via `AdminSetting::get($key, $default)`.
-- **`visitor_logs`** — `visit_date` + `path` + `ip_address` unique triplet, `hit_count` incremented per hit. Written by `LogVisitor` middleware.
-- **`referral_agents`** — `nama`, `whatsapp`, `kode` (unique), `status` (`Aktif`/`Nonaktif`, default `Aktif`, indexed). `murid.referral_agent_id` — nullable FK to `referral_agents`, `nullOnDelete()`.
-
-## 7. Business rules (confirmed)
-
-- Public registration flow: `POST /daftar` → `StoreMuridRequest` (validates + Indonesian error messages, forces JSON error responses even on non-AJAX-detected requests) → `MuridController::store()`.
-- WhatsApp numbers are normalized to `62xxxxxxxxxx` (no `+`, no leading `0`) before storage, for consistent `wa.me` links.
-- New registrations always get `status = Murid::STATUS_DAFTAR`.
-- `/daftar` is throttled to 10 requests/minute/IP to prevent spam.
-- `LogVisitor` middleware logs every non-admin `GET` request (dedup by date+path+IP, incrementing `hit_count`); purpose beyond basic analytics is undocumented.
-- Payment is **manual monthly**, not auto-charged — never build auto-billing logic without explicit confirmation.
-- Referral: `GET /daftar?ref=KODE` validates the code against an active `ReferralAgent` and queues it into a 30-day `referral_code` cookie (`ReferralAgentService::captureFromRequest`). `POST /daftar` resolves `referral_agent_id` from that cookie (`resolveAgentIdFromCookie`) — never entered manually by the user.
-- Login: `POST /login` (`LoginRequest::authenticate`) is rate-limited to 5 attempts/min per email+IP; on success the session is regenerated and the user is redirected to `admin.dashboard`. `POST /logout` invalidates the session and regenerates the CSRF token.
-- The sidebar "Logout" link in `layouts/admin.blade.php` submits a hidden `#logoutForm` (POST to `route('logout')`, CSRF included) via `confirmLogout()`. Fixed 2026-07-13 — previously each of the 8 admin pages defined its own fake `confirmLogout()` that only showed a toast and never called the backend; the real, single implementation now lives in the layout only.
-
-## 8. Known inconsistencies / open items
-
-- `StorePostRequest` exists in `app/Http/Requests` but no controller uses it, and `authorize()` returns `false`. Status unclear — don't delete or build around it without asking.
-- `routes/web.php` admin routes (dashboard, transaksi, laporan, pengaturan, murid, guru, jadwal, paket) still return static Blade views inline via closures — no controllers yet. As of 2026-07-13 the whole `admin.` group **is** wrapped in the built-in `auth` middleware, so all 8 routes require a logged-in session; guests get redirected to `login`. No role/permission checks — deliberately, per project rules.
-- `routes/web.php` used to register `GET /login` twice (old closure + `AuthController::create()`, both named `login`). Fixed 2026-07-13 — the old closure was removed, `AuthController::create()` is now the only handler.
-- `database/seeders/AdminSettingSeeder.php` (seeds `admin_settings.wa_admin_number`) exists but isn't called from `DatabaseSeeder::run()` — won't seed via `php artisan db:seed` until wired in.
-- Role/permission approach (Spatie vs custom) is undecided — don't implement either speculatively.
-- `docs/features.md` lists a broad, unstatused feature wishlist (Authorization, Audit Log, Export/Import Excel, etc.) that does not reflect current implementation — treat §10 below (mirroring `docs/current_state.md`) as the source of truth for what's actually built.
-- Zoom access delivery mechanism after payment: not designed yet.
-- `paket` pricing/tier definitions beyond the four names in `Murid::PAKET_OPTIONS`: not documented anywhere.
-
-## 9. Documentation map
-
-- `CLAUDE.md` — instruction set AI assistants must follow (architecture rules, output rules, guardrails). Do not edit without being asked.
-- `PROJECT_MEMORY.md` — a prior AI-generated audit of this codebase; overlaps heavily with this file. Do not overwrite.
-- `docs/*.md` (architecture, conventions, coding_style, database, decisions, deployment, features, current_state, changelog, ai_workflow, todo) — original short per-topic docs. Several are aspirational or stale (see §8). This file (`ai-context.md`) is the consolidated, verified successor — when they conflict, trust this file and flag the discrepancy to the owner rather than silently picking one.
-
-## 10. Feature status
-
-**Done:** Login (real session auth, rate-limited), Admin area authentication (all `admin.*` routes gated by built-in `auth` middleware, guest → `login` redirect, no role/permission layer), basic Dashboard view, User CRUD (model level only — no controller/UI seen), Murid registration (public form → DB), Referral Agent backend (model, migration, service, cookie capture — no admin UI yet, see `docs/todo.md`).
-**In progress:** Member/Murid admin module (view scaffolded, no controller), Payment module (not started in code).
-**Not started:** Reporting, Notifications, Role/permission system.
-
-## 11. External integrations
-
-None are actually wired up yet:
-
-- **Midtrans** (payment) — planned per `docs/decisions.md`, mentioned only as placeholder text in a view. No SDK installed.
-- **Laravel Breeze** — not used. Auth is hand-rolled with Laravel's built-in `Auth` facade (`AuthController` + `LoginRequest`); Breeze is still not installed.
-- Default Laravel service stubs only (`config/services.php`): Postmark, Resend, SES, Slack notifications — none configured with real credentials in `.env.example`.
-- Mail driver is `log` (dev), queue/cache/session all use `database` driver locally.
-
-## 12. Files to not modify without explicit permission
-
-- `CLAUDE.md`, `PROJECT_MEMORY.md`, existing `docs/*.md` files (add/update, don't overwrite silently).
-- Any migration for `murid`, `admin_settings`, `visitor_logs`, `users` — no schema changes unless explicitly requested.
-- Method names, route names, model names — no renaming without permission.
-- `app/Http/Requests/StorePostRequest.php` — leave as-is until its purpose is clarified.
-
-## 13. Common development commands
-
-```bash
-# Install & first-time setup
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-npm install
-npm run build
-
-# Local dev (server + queue worker + log tail + vite, all at once)
-composer run dev
-
-# Tests
-composer run test
-php artisan test
-
-# Code style (Pint is installed as a dev dependency)
-vendor/bin/pint
-
-# Production-ish local commands
-php artisan optimize
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-```
-
-## 14. When unsure
-
-Ask before making architectural changes. Don't guess project conventions — check this file, `CLAUDE.md`, and the actual code (not just the aspirational `docs/*.md` files) before assuming a pattern exists.
+**Yang BELUM ada:** `app/Repositories`, `app/Policies`, `app/Enums`, `app/Events`, `app/Jobs`, `app/Notifications`, `app/Actions`. Jangan asumsikan folder-folder ini ada.
 
 ---
-*Last verified against the codebase: 2026-07-13. Update this file whenever architecture, folder structure, business rules, or integrations change.*
+
+## 5. Coding Convention
+
+**Style & prinsip:**
+
+- **PSR-12**. Strict typing bila praktis. Fungsi < ~50 baris. Early return > nested if. Dependency injection > static method (pengecualian pragmatis: `AdminSetting::get()` — jangan diperluas polanya).
+- Tidak ada unused import, tidak ada kode duplikat.
+- **Eloquent only** — hindari raw SQL, hindari `SELECT *`, cegah N+1 (`with()`, `load()`, `paginate()`).
+- Relasi yang dipakai: `belongsTo`, `hasMany` (mis. `Murid::referralAgent`, `ReferralAgent::murid`).
+- **Istilah domain tetap Indonesia** (`Murid`, `paket`, `level_belajar`, `nama`, `kode`) — jangan diterjemahkan ke Inggris di kode/DB/UI.
+
+**Naming convention:**
+
+| Tipe            | Konvensi                                  | Contoh nyata                                                   |
+| --------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| Controller      | `PascalCase` + `Controller`               | `MuridController`, `AuthController`                            |
+| Service         | `PascalCase` + `Service`                  | `ReferralAgentService`                                         |
+| Form Request    | `Store/Update` + Model + `Request`        | `StoreMuridRequest`, `LoginReques

@@ -1,8 +1,11 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MuridController;
+use App\Http\Controllers\ReferralAgentController;
+use App\Services\ReferralAgentService;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +17,10 @@ use App\Http\Controllers\MuridController;
 */
 
 // ===== PUBLIC =====
-Route::get('/', function () {
+// Capture ?share_via=KODE di sini juga, biar link referral yang di-share ke root domain tetap kena track.
+Route::get('/', function (Request $request, ReferralAgentService $referralAgentService) {
+    $referralAgentService->captureFromRequest($request);
+
     return view('pages.home');
 })->name('home');
 
@@ -51,18 +57,4 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Sekarang beneran ada view-nya (diambil dari tab tersembunyi di dashboard_html.html asli)
     Route::get('/murid', function () {
-        return view('admin.murid');
-    })->name('murid');
-
-    Route::get('/guru', function () {
-        return view('admin.guru');
-    })->name('guru');
-
-    Route::get('/jadwal', function () {
-        return view('admin.jadwal');
-    })->name('jadwal');
-
-    Route::get('/paket', function () {
-        return view('admin.paket');
-    })->name('paket');
-});
+        return vi
