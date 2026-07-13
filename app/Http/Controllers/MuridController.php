@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMuridRequest;
 use App\Models\AdminSetting;
 use App\Models\Murid;
 use App\Services\ReferralAgentService;
+use App\Services\TransaksiService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -22,7 +23,7 @@ class MuridController extends Controller
         return view('pages.home');
     }
 
-    public function store(StoreMuridRequest $request, ReferralAgentService $referralAgentService)
+    public function store(StoreMuridRequest $request, ReferralAgentService $referralAgentService, TransaksiService $transaksiService)
     {
         $validated = $request->validated();
 
@@ -33,6 +34,11 @@ class MuridController extends Controller
         $validated['referral_agent_id'] = $referralAgentService->resolveAgentIdFromCookie($request);
 
         $murid = Murid::create($validated);
+
+        // Auto-generate transaksi (status awal Menunggu Pembayaran) — hanya utk pendaftaran
+        // publik fase ini. Tambah murid manual dari admin belum dapat transaksi otomatis
+        // (lihat docs/todo.md).
+        $transaksiService->createFromMurid($murid);
 
         $waAdmin = AdminSetting::get('wa_admin_number');
 

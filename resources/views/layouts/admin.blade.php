@@ -30,7 +30,7 @@
             <li><a href="{{ route('admin.murid.index') }}" class="{{ request()->routeIs('admin.murid.*') ? 'active' : '' }}"><i class="fas fa-user-graduate"></i> Murid</a></li>
             <li><a href="{{ route('admin.guru') }}" class="{{ request()->routeIs('admin.guru') ? 'active' : '' }}"><i class="fas fa-chalkboard-teacher"></i> Guru</a></li>
             <li><a href="{{ route('admin.jadwal') }}" class="{{ request()->routeIs('admin.jadwal') ? 'active' : '' }}"><i class="fas fa-calendar-alt"></i> Jadwal</a></li>
-            <li><a href="{{ route('admin.transaksi') }}" class="{{ request()->routeIs('admin.transaksi') ? 'active' : '' }}"><i class="fas fa-credit-card"></i> Transaksi</a></li>
+            <li><a href="{{ route('admin.transaksi.index') }}" class="{{ request()->routeIs('admin.transaksi.*') ? 'active' : '' }}"><i class="fas fa-credit-card"></i> Transaksi</a></li>
             <li><a href="{{ route('admin.paket') }}" class="{{ request()->routeIs('admin.paket') ? 'active' : '' }}"><i class="fas fa-tags"></i> Paket</a></li>
             <li><a href="{{ route('admin.referral-agent.index') }}" class="{{ request()->routeIs('admin.referral-agent.*') ? 'active' : '' }}"><i class="fas fa-user-tie"></i> Referral Agent</a></li>
             <li class="menu-label">Lainnya</li>

@@ -13,6 +13,7 @@
 - [ ] Admin Murid: Filter Status.
 - [ ] Admin Murid: Filter Paket.
 - [ ] Admin Murid: Filter Level Belajar.
+- [ ] Admin Transaksi: Auto-create transaksi juga untuk murid yang ditambah admin manual dari Manajemen Murid (saat ini `TransaksiService::createFromMurid()` cuma dipanggil dari `MuridController@store` / pendaftaran publik — dikonfirmasi owner 2026-07-13, scope fase ini sengaja cuma pendaftaran publik).
 
 ## Prioritas Rendah
 

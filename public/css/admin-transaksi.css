@@ -759,3 +759,326 @@
                 transform: translateY(0);
             }
         }
+
+/* ===== MANAJEMEN TRANSAKSI (2026-07-13) — status baru & modal Detail/Verifikasi nyata ===== */
+
+/* Generic modal title/subtitle — sebelumnya gak ada di file ini karena modal lama (mock)
+   selalu pakai inline style. Modal Verifikasi Pembayaran butuh ini (pola sama admin-dashboard.css). */
+.modal h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.modal p.sub {
+    color: var(--text-gray);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* Status enum baru (backend nyata), beda dari status dummy lama di atas */
+.status-badge.menunggu_pembayaran {
+    background: rgba(245, 166, 35, 0.12);
+    color: var(--secondary);
+}
+.status-badge.menunggu_verifikasi {
+    background: rgba(52, 152, 219, 0.12);
+    color: var(--blue);
+}
+.status-badge.berhasil {
+    background: rgba(34, 180, 85, 0.12);
+    color: var(--primary-light);
+}
+.status-badge.ditolak {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+}
+
+.filter-bar input[type="date"] {
+    padding: 8px 16px;
+    border: 1px solid #e0e8e0;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    background: var(--white);
+    font-family: inherit;
+    color: var(--text-gray);
+    outline: none;
+}
+
+/* Indikator transaksi belum pernah dibuka admin */
+.invoice-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.new-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15);
+}
+
+#transaksiListContainer {
+    transition: opacity 0.15s ease;
+}
+
+.pagination .pages button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.pagination .pages button:disabled:hover {
+    background: transparent;
+}
+
+/* Modal Detail Transaksi lebih lebar dari modal standar */
+.modal.modal-lg {
+    max-width: 720px;
+}
+
+.detail-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 24px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.detail-section-title i {
+    color: var(--primary);
+}
+.detail-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.detail-hint {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f4f0;
+}
+.detail-row:last-child {
+    border-bottom: none;
+}
+.detail-row span {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+.detail-row strong {
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.catatan-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e8e0;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+    color: var(--text-dark);
+}
+.catatan-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+.catatan-actions button {
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    background: #f0f4f0;
+    color: var(--text-gray);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.catatan-actions button:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+.catatan-actions button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.bukti-preview-box {
+    background: #f8faf8;
+    border: 1px dashed #d8e2d8;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+.bukti-preview-box img {
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: 6px;
+    object-fit: contain;
+}
+.bukti-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.activity-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.activity-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-left: 2px solid #e8eee8;
+    margin-left: 4px;
+    padding-left: 16px;
+    position: relative;
+}
+.activity-item:last-child {
+    border-left-color: transparent;
+}
+.activity-dot {
+    position: absolute;
+    left: -5px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+.activity-desc {
+    font-size: 0.88rem;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+.activity-meta {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+.detail-final-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f4f0;
+}
+
+/* Tombol aksi generik dipakai di Detail Transaksi (final actions & bukti transfer) */
+.detail-final-actions button,
+.bukti-actions a {
+    padding: 10px 24px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+.detail-final-actions .btn-primary {
+    background: var(--primary);
+    color: var(--white);
+}
+.detail-final-actions .btn-primary:hover {
+    background: var(--primary-dark);
+}
+.detail-final-actions .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+}
+.detail-final-actions .btn-danger:hover {
+    background: #c0392b;
+}
+.bukti-actions .btn-secondary {
+    background: #f0f4f0;
+    color: var(--text-gray);
+}
+.bukti-actions .btn-secondary:hover {
+    background: #e0e8e0;
+}
+
+/* ===== FORM (dipakai modal Verifikasi Pembayaran) ===== */
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+    color: var(--text-dark);
+}
+.form-group input[type="file"],
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e8e0;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+.form-group textarea {
+    resize: vertical;
+}
+.form-group img {
+    margin-top: 10px;
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 8px;
+    display: block;
+}
+.field-error {
+    display: block;
+    color: #d64545;
+    font-size: 0.78rem;
+    margin-top: 4px;
+}
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+.btn-cancel {
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    background: #f0f4f0;
+    color: var(--text-gray);
+}
+.btn-submit {
+    padding: 12px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    background: var(--primary);
+    color: var(--white);
+    flex: 1;
+}
+.btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

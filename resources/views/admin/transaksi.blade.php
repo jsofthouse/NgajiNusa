@@ -1,545 +1,192 @@
 @extends('layouts.admin')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin-transaksi.css') }}" />
+<link rel="stylesheet" href="{{ asset('css/admin-transaksi.css') }}?v={{ @filemtime(public_path('css/admin-transaksi.css')) ?: '1' }}" />
 @endpush
 
-@section('title', 'NgajiNusa - Transaksi & Pembayaran')
+@section('title', 'NgajiNusa - Manajemen Transaksi')
 
-@section('page-title', '💳 Transaksi & Pembayaran')
-@section('page-subtitle', 'Kelola semua transaksi dan pembayaran kursus')
-
-@section('topbar-actions')
-                <button class="btn-secondary" onclick="showToast('Data transaksi berhasil diekspor!')">
-                    <i class="fas fa-file-excel"></i> Export
-                </button>
-                <button class="btn-primary" onclick="openNewInvoice()">
-                    <i class="fas fa-plus"></i> Invoice Baru
-                </button>
-@endsection
+@section('page-title', 'Manajemen Transaksi')
+@section('page-subtitle', 'Kelola dan verifikasi pembayaran pendaftaran murid')
 
 @section('content')
-        <!-- Stats -->
+
+        <!-- ===== DASHBOARD SUMMARY ===== -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-coins"></i></div>
-                <div class="stat-number">Rp 32,4Jt</div>
-                <div class="stat-label">Total Pendapatan</div>
+                <div class="stat-icon"><i class="fas fa-clock" style="color:var(--secondary);"></i></div>
+                <div class="stat-number" id="statMenungguPembayaran">{{ $summary['menunggu_pembayaran'] }}</div>
+                <div class="stat-label">Total Menunggu Pembayaran</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-spinner" style="color:var(--blue);"></i></div>
+                <div class="stat-number" id="statMenungguVerifikasi">{{ $summary['menunggu_verifikasi'] }}</div>
+                <div class="stat-label">Total Menunggu Verifikasi</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-check-circle" style="color:var(--primary-light);"></i></div>
-                <div class="stat-number">47</div>
-                <div class="stat-label">Transaksi Lunas</div>
+                <div class="stat-number" id="statBerhasil">{{ $summary['berhasil'] }}</div>
+                <div class="stat-label">Total Pembayaran Berhasil</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-clock" style="color:var(--secondary);"></i></div>
-                <div class="stat-number">8</div>
-                <div class="stat-label">Menunggu Pembayaran</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i></div>
-                <div class="stat-number">3</div>
-                <div class="stat-label">Kadaluarsa / Batal</div>
+                <div class="stat-icon"><i class="fas fa-coins" style="color:var(--primary);"></i></div>
+                <div class="stat-number" id="statPendapatanBulanIni">Rp {{ number_format($summary['pendapatan_bulan_ini'], 0, ',', '.') }}</div>
+                <div class="stat-label">Total Pendapatan Bulan Ini</div>
             </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="trans-tabs">
-            <button class="active" data-tab="semua">
+        <!-- ===== TAB FILTER ===== -->
+        <div class="trans-tabs" id="transaksiTabs">
+            <button class="{{ $filters['status'] === 'semua' ? 'active' : '' }}" data-status="semua">
                 <i class="fas fa-list"></i> Semua
-                <span class="badge">58</span>
+                <span class="badge">{{ $counts['semua'] }}</span>
             </button>
-            <button data-tab="menunggu">
-                <i class="fas fa-clock"></i> Menunggu
-                <span class="badge">8</span>
+            <button class="{{ $filters['status'] === 'menunggu_pembayaran' ? 'active' : '' }}" data-status="menunggu_pembayaran">
+                <i class="fas fa-clock"></i> Menunggu Pembayaran
+                <span class="badge">{{ $counts['menunggu_pembayaran'] }}</span>
             </button>
-            <button data-tab="diproses">
-                <i class="fas fa-spinner"></i> Diproses
-                <span class="badge">3</span>
+            <button class="{{ $filters['status'] === 'menunggu_verifikasi' ? 'active' : '' }}" data-status="menunggu_verifikasi">
+                <i class="fas fa-spinner"></i> Menunggu Verifikasi
+                <span class="badge">{{ $counts['menunggu_verifikasi'] }}</span>
             </button>
-            <button data-tab="lunas">
-                <i class="fas fa-check"></i> Lunas
-                <span class="badge">47</span>
+            <button class="{{ $filters['status'] === 'berhasil' ? 'active' : '' }}" data-status="berhasil">
+                <i class="fas fa-check"></i> Berhasil
+                <span class="badge">{{ $counts['berhasil'] }}</span>
             </button>
-            <button data-tab="batal">
-                <i class="fas fa-times"></i> Batal/Kadaluarsa
-                <span class="badge">3</span>
+            <button class="{{ $filters['status'] === 'ditolak' ? 'active' : '' }}" data-status="ditolak">
+                <i class="fas fa-times"></i> Ditolak
+                <span class="badge">{{ $counts['ditolak'] }}</span>
             </button>
         </div>
 
-        <!-- Filter Bar -->
+        <!-- ===== FILTER BAR ===== -->
         <div class="filter-bar">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Cari invoice, murid, atau metode..." id="searchInput" oninput="filterTable()" />
+                <input type="text" id="searchInput" placeholder="Cari invoice, nama murid, atau nomor WA..." value="{{ $filters['search'] }}" />
             </div>
-            <select id="filterMethod" onchange="filterTable()">
+            <select id="filterPaket">
+                <option value="">Semua Paket</option>
+                @foreach (\App\Models\Murid::PAKET_OPTIONS as $paket)
+                    <option value="{{ $paket }}" {{ $filters['paket'] === $paket ? 'selected' : '' }}>{{ $paket }}</option>
+                @endforeach
+            </select>
+            <select id="filterMetode">
                 <option value="">Semua Metode</option>
-                <option value="QRIS">QRIS</option>
-                <option value="Transfer">Transfer Bank</option>
-                <option value="E-Wallet">E-Wallet</option>
-                <option value="Tunai">Tunai</option>
+                @foreach (\App\Models\Transaksi::METODE_OPTIONS as $metode)
+                    <option value="{{ $metode }}" {{ $filters['metode_pembayaran'] === $metode ? 'selected' : '' }}>{{ \App\Models\Transaksi::METODE_LABELS[$metode] }}</option>
+                @endforeach
             </select>
-            <select id="filterDate" onchange="filterTable()">
-                <option value="all">Semua Periode</option>
-                <option value="today">Hari Ini</option>
-                <option value="week">Minggu Ini</option>
-                <option value="month">Bulan Ini</option>
-            </select>
+            <input type="date" id="filterDateFrom" title="Dari tanggal" value="{{ $filters['date_from'] }}" />
+            <input type="date" id="filterDateTo" title="Sampai tanggal" value="{{ $filters['date_to'] }}" />
         </div>
 
-        <!-- ===== TAB: SEMUA ===== -->
-        <div class="tab-content active" id="tab-semua">
-            <div class="table-wrap">
-                <table id="transTable">
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Murid</th>
-                            <th>Paket</th>
-                            <th>Metode</th>
-                            <th>Nominal</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transBody">
-                        <tr data-status="menunggu" data-method="QRIS" data-date="2026-07-10">
-                            <td><strong>#INV-049</strong></td>
-                            <td>Fatimah A.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-qrcode" style="color:var(--primary);"></i> QRIS</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge menunggu">Menunggu</span></td>
-                            <td>10 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-049')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="lunas" data-method="Transfer" data-date="2026-07-09">
-                            <td><strong>#INV-048</strong></td>
-                            <td>Adam S.</td>
-                            <td>Premium</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 800.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>09 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-048')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="lunas" data-method="E-Wallet" data-date="2026-07-08">
-                            <td><strong>#INV-047</strong></td>
-                            <td>Zahra N.</td>
-                            <td>Basic</td>
-                            <td><span class="payment-method"><i class="fas fa-mobile-alt" style="color:var(--purple);"></i> E-Wallet</span></td>
-                            <td>Rp 250.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>08 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-047')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="diproses" data-method="Transfer" data-date="2026-07-07">
-                            <td><strong>#INV-046</strong></td>
-                            <td>Muhammad R.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge diproses">Diproses</span></td>
-                            <td>07 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-046')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="lunas" data-method="QRIS" data-date="2026-07-06">
-                            <td><strong>#INV-045</strong></td>
-                            <td>Nisa A.</td>
-                            <td>Premium</td>
-                            <td><span class="payment-method"><i class="fas fa-qrcode" style="color:var(--primary);"></i> QRIS</span></td>
-                            <td>Rp 800.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>06 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-045')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="menunggu" data-method="E-Wallet" data-date="2026-07-05">
-                            <td><strong>#INV-044</strong></td>
-                            <td>Rizki A.</td>
-                            <td>Basic</td>
-                            <td><span class="payment-method"><i class="fas fa-mobile-alt" style="color:var(--purple);"></i> E-Wallet</span></td>
-                            <td>Rp 250.000</td>
-                            <td><span class="status-badge menunggu">Menunggu</span></td>
-                            <td>05 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-044')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="batal" data-method="Transfer" data-date="2026-07-04" class="expired">
-                            <td><strong>#INV-043</strong></td>
-                            <td>Siti N.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge kadaluarsa">Kadaluarsa</span></td>
-                            <td>04 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-043')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dihapus!')" style="color:var(--danger);"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr data-status="lunas" data-method="QRIS" data-date="2026-07-03">
-                            <td><strong>#INV-042</strong></td>
-                            <td>Hasan M.</td>
-                            <td>Premium</td>
-                            <td><span class="payment-method"><i class="fas fa-qrcode" style="color:var(--primary);"></i> QRIS</span></td>
-                            <td>Rp 800.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>03 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-042')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="pagination">
-                    <span class="info">Menampilkan 1-7 dari 58 transaksi</span>
-                    <div class="pages">
-                        <button>‹</button>
-                        <button class="active">1</button>
-                        <button>2</button>
-                        <button>3</button>
-                        <button>…</button>
-                        <button>9</button>
-                        <button>›</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== TAB: MENUNGGU ===== -->
-        <div class="tab-content" id="tab-menunggu">
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Murid</th>
-                            <th>Paket</th>
-                            <th>Metode</th>
-                            <th>Nominal</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>#INV-049</strong></td>
-                            <td>Fatimah A.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-qrcode" style="color:var(--primary);"></i> QRIS</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge menunggu">Menunggu</span></td>
-                            <td>10 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-049')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>#INV-044</strong></td>
-                            <td>Rizki A.</td>
-                            <td>Basic</td>
-                            <td><span class="payment-method"><i class="fas fa-mobile-alt" style="color:var(--purple);"></i> E-Wallet</span></td>
-                            <td>Rp 250.000</td>
-                            <td><span class="status-badge menunggu">Menunggu</span></td>
-                            <td>05 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-044')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ===== TAB: DIPROSES ===== -->
-        <div class="tab-content" id="tab-diproses">
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Murid</th>
-                            <th>Paket</th>
-                            <th>Metode</th>
-                            <th>Nominal</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>#INV-046</strong></td>
-                            <td>Muhammad R.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge diproses">Diproses</span></td>
-                            <td>07 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-046')"><i class="fas fa-eye"></i></button>
-                                    <button class="whatsapp" onclick="showToast('Notifikasi WA dikirim!')"><i class="fab fa-whatsapp"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ===== TAB: LUNAS ===== -->
-        <div class="tab-content" id="tab-lunas">
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Murid</th>
-                            <th>Paket</th>
-                            <th>Metode</th>
-                            <th>Nominal</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>#INV-048</strong></td>
-                            <td>Adam S.</td>
-                            <td>Premium</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 800.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>09 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-048')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>#INV-047</strong></td>
-                            <td>Zahra N.</td>
-                            <td>Basic</td>
-                            <td><span class="payment-method"><i class="fas fa-mobile-alt" style="color:var(--purple);"></i> E-Wallet</span></td>
-                            <td>Rp 250.000</td>
-                            <td><span class="status-badge lunas">Lunas</span></td>
-                            <td>08 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-047')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dikirim ke email!')"><i class="fas fa-envelope"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ===== TAB: BATAL ===== -->
-        <div class="tab-content" id="tab-batal">
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Invoice</th>
-                            <th>Murid</th>
-                            <th>Paket</th>
-                            <th>Metode</th>
-                            <th>Nominal</th>
-                            <th>Status</th>
-                            <th>Tanggal</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="expired">
-                            <td><strong>#INV-043</strong></td>
-                            <td>Siti N.</td>
-                            <td>Pro</td>
-                            <td><span class="payment-method"><i class="fas fa-university" style="color:var(--blue);"></i> Transfer</span></td>
-                            <td>Rp 450.000</td>
-                            <td><span class="status-badge kadaluarsa">Kadaluarsa</span></td>
-                            <td>04 Jul 2026</td>
-                            <td>
-                                <div class="table-actions">
-                                    <button onclick="viewInvoice('INV-043')"><i class="fas fa-eye"></i></button>
-                                    <button onclick="showToast('Invoice dihapus!')" style="color:var(--danger);"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <!-- ===== TABEL TRANSAKSI ===== -->
+        <div id="transaksiListContainer">
+            @include('admin.partials.transaksi-list', ['transaksiList' => $transaksiList])
         </div>
 @endsection
 
 @section('modals')
-    <!-- ===== INVOICE DETAIL MODAL ===== -->
-    <div class="modal-overlay" id="invoiceModal">
-        <div class="modal">
-            <button class="close-modal" onclick="closeInvoiceModal()"><i class="fas fa-times"></i></button>
+    <!-- ===== MODAL DETAIL TRANSAKSI ===== -->
+    <div class="modal-overlay" id="detailModalOverlay">
+        <div class="modal modal-lg">
+            <button class="close-modal" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
 
             <div class="invoice-header">
                 <div>
-                    <div class="title"><i class="fas fa-file-invoice" style="margin-right:8px;"></i> Invoice</div>
-                    <div class="sub" id="invNumber">#INV-049</div>
+                    <div class="title"><i class="fas fa-file-invoice" style="margin-right:8px;"></i> Detail Transaksi</div>
+                    <div class="sub" id="detailInvoiceNumber">-</div>
                 </div>
-                <span class="status-badge menunggu" id="invStatus">Menunggu</span>
+                <span class="status-badge" id="detailStatusBadge">-</span>
             </div>
 
-            <div class="invoice-body">
-                <div class="field">
-                    <div class="label">Murid</div>
-                    <div class="value" id="invCustomer">Fatimah A.</div>
+            <h4 class="detail-section-title"><i class="fas fa-user"></i> Informasi Murid</h4>
+            <div class="detail-list">
+                <div class="detail-row"><span>Nama</span><strong id="detailNamaMurid">-</strong></div>
+                <div class="detail-row"><span>Nomor WhatsApp</span><strong id="detailWhatsappMurid">-</strong></div>
+                <div class="detail-row"><span>Email</span><strong id="detailEmailMurid">-</strong></div>
+                <div class="detail-row"><span>Paket</span><strong id="detailPaketMurid">-</strong></div>
+            </div>
+
+            <h4 class="detail-section-title"><i class="fas fa-receipt"></i> Informasi Transaksi</h4>
+            <div class="detail-list">
+                <div class="detail-row"><span>Invoice</span><strong id="detailInvoice">-</strong></div>
+                <div class="detail-row"><span>Nominal</span><strong id="detailNominal">-</strong></div>
+                <div class="detail-row"><span>Metode Pembayaran</span><strong id="detailMetode">-</strong></div>
+                <div class="detail-row"><span>Status</span><strong id="detailStatusText">-</strong></div>
+                <div class="detail-row"><span>Waktu Daftar</span><strong id="detailWaktuDaftar">-</strong></div>
+                <div class="detail-row"><span>Waktu Verifikasi</span><strong id="detailWaktuVerifikasi">-</strong></div>
+                <div class="detail-row"><span>Admin Verifikator</span><strong id="detailAdminVerifikator">-</strong></div>
+            </div>
+
+            <h4 class="detail-section-title"><i class="fas fa-sticky-note"></i> Catatan Internal Admin</h4>
+            <p class="detail-hint">Catatan ini cuma bisa dilihat admin, tidak terlihat oleh murid.</p>
+            <textarea id="detailCatatanInput" class="catatan-textarea" rows="3" placeholder="Belum ada catatan..."></textarea>
+            <div class="catatan-actions">
+                <button type="button" class="btn-secondary" id="btnSimpanCatatan" onclick="saveCatatan()">
+                    <i class="fas fa-save"></i> Simpan Catatan
+                </button>
+            </div>
+
+            <!-- ===== BUKTI TRANSFER (hanya tampil kalau sudah berhasil) ===== -->
+            <div id="buktiTransferSection" style="display:none;">
+                <h4 class="detail-section-title"><i class="fas fa-image"></i> Bukti Transfer</h4>
+                <div class="bukti-preview-box">
+                    <img id="buktiPreviewImg" src="" alt="Bukti Transfer" />
                 </div>
-                <div class="field">
-                    <div class="label">Tanggal</div>
-                    <div class="value" id="invDate">10 Juli 2026</div>
-                </div>
-                <div class="field">
-                    <div class="label">Paket</div>
-                    <div class="value" id="invPackage">Pro</div>
-                </div>
-                <div class="field">
-                    <div class="label">Metode Pembayaran</div>
-                    <div class="value" id="invMethod">QRIS</div>
-                </div>
-                <div class="field">
-                    <div class="label">Jatuh Tempo</div>
-                    <div class="value" id="invDue">12 Juli 2026</div>
-                </div>
-                <div class="field">
-                    <div class="label">Status</div>
-                    <div class="value" id="invStatusText">Menunggu Pembayaran</div>
+                <div class="bukti-actions">
+                    <a href="#" id="btnLihatBukti" target="_blank" class="btn-secondary">
+                        <i class="fas fa-eye"></i> Lihat
+                    </a>
+                    <a href="#" id="btnDownloadBukti" class="btn-secondary">
+                        <i class="fas fa-download"></i> Download
+                    </a>
                 </div>
             </div>
 
-            <div class="invoice-items">
-                <div class="item">
-                    <span>Paket Pro (8 sesi)</span>
-                    <span>Rp 450.000</span>
-                </div>
-                <div class="item">
-                    <span>Biaya Administrasi</span>
-                    <span>Rp 0</span>
-                </div>
-                <div class="item total">
-                    <span>Total</span>
-                    <span id="invTotal">Rp 450.000</span>
-                </div>
-            </div>
+            <h4 class="detail-section-title"><i class="fas fa-history"></i> Histori Aktivitas</h4>
+            <div id="activityTimeline" class="activity-timeline"></div>
 
-            <div class="invoice-actions">
-                <button class="btn-primary" onclick="showToast('Invoice berhasil dikirim ke email!')">
-                    <i class="fas fa-envelope"></i> Kirim Email
+            <!-- ===== AKSI TRANSAKSI ===== -->
+            <div class="detail-final-actions" id="detailFinalActions" style="display:none;">
+                <button type="button" class="btn-danger" onclick="rejectCurrentTransaksi()">
+                    <i class="fas fa-times"></i> Tolak
                 </button>
-                <button class="btn-primary" onclick="showToast('Notifikasi WA berhasil dikirim!')">
-                    <i class="fab fa-whatsapp"></i> Kirim WA
-                </button>
-                <button class="btn-secondary" onclick="showToast('Invoice berhasil dicetak!')">
-                    <i class="fas fa-print"></i> Cetak
-                </button>
-                <button class="btn-danger" onclick="if(confirm('Konfirmasi pembatalan invoice?')){showToast('Invoice dibatalkan!');closeInvoiceModal();}">
-                    <i class="fas fa-times"></i> Batalkan
+                <button type="button" class="btn-primary" onclick="openVerifyModalFromDetail()">
+                    <i class="fas fa-check"></i> Verifikasi Pembayaran
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ===== NEW INVOICE MODAL ===== -->
-    <div class="modal-overlay" id="newInvoiceModal">
+    <!-- ===== MODAL VERIFIKASI PEMBAYARAN ===== -->
+    <div class="modal-overlay" id="verifyModalOverlay">
         <div class="modal">
-            <button class="close-modal" onclick="closeNewInvoiceModal()"><i class="fas fa-times"></i></button>
-            <h3 style="font-size:1.4rem;font-weight:700;margin-bottom:6px;">
-                <i class="fas fa-file-invoice" style="color:var(--primary);"></i> Buat Invoice Baru
-            </h3>
-            <p style="color:var(--text-gray);font-size:0.9rem;margin-bottom:20px;">Isi data untuk membuat invoice baru.</p>
+            <button class="close-modal" onclick="closeVerifyModal()"><i class="fas fa-times"></i></button>
+            <h3><i class="fas fa-check-circle" style="color:var(--primary);"></i> Verifikasi Pembayaran</h3>
+            <p class="sub">Unggah ulang bukti transfer sebagai dokumentasi verifikasi.</p>
 
-            <form onsubmit="saveNewInvoice(event)">
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-weight:600;font-size:0.85rem;margin-bottom:4px;">Murid</label>
-                    <select style="width:100%;padding:12px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:0.95rem;font-family:inherit;background:var(--white);">
-                        <option>Fatimah A.</option>
-                        <option>Adam S.</option>
-                        <option>Zahra N.</option>
-                        <option>Muhammad R.</option>
-                        <option>Nisa A.</option>
-                    </select>
+            <div class="detail-list" style="margin-bottom:16px;">
+                <div class="detail-row"><span>Invoice</span><strong id="verifyInvoice">-</strong></div>
+                <div class="detail-row"><span>Nama Murid</span><strong id="verifyNama">-</strong></div>
+                <div class="detail-row"><span>Paket</span><strong id="verifyPaket">-</strong></div>
+                <div class="detail-row"><span>Nominal</span><strong id="verifyNominal">-</strong></div>
+            </div>
+
+            <form id="verifyForm">
+                <div class="form-group">
+                    <label>Upload Bukti Transfer <span style="color:var(--danger);">*</span></label>
+                    <input type="file" id="verifyBuktiInput" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required />
+                    <img id="verifyPreviewImg" style="display:none;" alt="Preview bukti transfer" />
                 </div>
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-weight:600;font-size:0.85rem;margin-bottom:4px;">Paket</label>
-                    <select style="width:100%;padding:12px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:0.95rem;font-family:inherit;background:var(--white);">
-                        <option>Basic - Rp 250.000</option>
-                        <option selected>Pro - Rp 450.000</option>
-                        <option>Premium - Rp 800.000</option>
-                    </select>
+                <div class="form-group">
+                    <label>Catatan Internal Admin (opsional)</label>
+                    <textarea id="verifyCatatanInput" rows="3" placeholder="Catatan tambahan..."></textarea>
                 </div>
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-weight:600;font-size:0.85rem;margin-bottom:4px;">Metode Pembayaran</label>
-                    <select style="width:100%;padding:12px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:0.95rem;font-family:inherit;background:var(--white);">
-                        <option>QRIS</option>
-                        <option>Transfer Bank</option>
-                        <option>E-Wallet</option>
-                        <option>Tunai</option>
-                    </select>
-                </div>
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-weight:600;font-size:0.85rem;margin-bottom:4px;">Tanggal Jatuh Tempo</label>
-                    <input type="date" value="2026-07-17" style="width:100%;padding:12px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:0.95rem;font-family:inherit;" />
-                </div>
-                <div style="display:flex;gap:12px;margin-top:20px;">
-                    <button type="button" onclick="closeNewInvoiceModal()" style="padding:12px 28px;border-radius:50px;font-weight:600;background:#f0f4f0;color:var(--text-gray);">Batal</button>
-                    <button type="submit" style="padding:12px 28px;border-radius:50px;font-weight:600;background:var(--primary);color:var(--white);flex:1;">
-                        <i class="fas fa-save"></i> Buat Invoice
-                    </button>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeVerifyModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="btnVerifySubmit"><i class="fas fa-save"></i> Simpan &amp; Verifikasi</button>
                 </div>
             </form>
         </div>
@@ -548,160 +195,361 @@
 
 @push('scripts')
 <script>
-        // ===== SIDEBAR TOGGLE =====
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('open');
-        });
-
-        document.addEventListener('click', function(e) {
-            const sidebar = document.getElementById('sidebar');
-            const toggle = document.getElementById('sidebarToggle');
-            if (window.innerWidth <= 992) {
-                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-                    sidebar.classList.remove('open');
-                }
+    // ===== SIDEBAR TOGGLE =====
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        document.getElementById('sidebar').classList.toggle('open');
+    });
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        if (window.innerWidth <= 992) {
+            if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                sidebar.classList.remove('open');
             }
-        });
+        }
+    });
 
-        // ===== TABS =====
-        const tabButtons = document.querySelectorAll('.trans-tabs button');
-        const tabContents = {
-            semua: document.getElementById('tab-semua'),
-            menunggu: document.getElementById('tab-menunggu'),
-            diproses: document.getElementById('tab-diproses'),
-            lunas: document.getElementById('tab-lunas'),
-            batal: document.getElementById('tab-batal'),
-        };
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const transaksiUrl = "{{ url('admin/transaksi') }}";
 
+    const STATUS_LABELS = @json(\App\Models\Transaksi::STATUS_LABELS);
+    const METODE_LABELS = @json(\App\Models\Transaksi::METODE_LABELS);
+
+    // ===== LIST: FILTER + SEARCH + PAGINATION (async) =====
+    let currentPage = {{ $transaksiList->currentPage() }};
+    let currentStatus = @json($filters['status']);
+    let currentSearch = @json($filters['search']);
+    let searchDebounce = null;
+
+    const listContainer = document.getElementById('transaksiListContainer');
+    const searchInput = document.getElementById('searchInput');
+    const filterPaket = document.getElementById('filterPaket');
+    const filterMetode = document.getElementById('filterMetode');
+    const filterDateFrom = document.getElementById('filterDateFrom');
+    const filterDateTo = document.getElementById('filterDateTo');
+    const tabButtons = document.querySelectorAll('#transaksiTabs button');
+
+    function updateSummaryCards(summary) {
+        document.getElementById('statMenungguPembayaran').textContent = summary.menunggu_pembayaran;
+        document.getElementById('statMenungguVerifikasi').textContent = summary.menunggu_verifikasi;
+        document.getElementById('statBerhasil').textContent = summary.berhasil;
+        document.getElementById('statPendapatanBulanIni').textContent = 'Rp ' + Number(summary.pendapatan_bulan_ini).toLocaleString('id-ID');
+    }
+
+    function updateTabCounts(counts) {
         tabButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                tabButtons.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                Object.keys(tabContents).forEach(key => {
-                    tabContents[key].classList.remove('active');
-                });
-
-                const tabId = this.dataset.tab;
-                if (tabContents[tabId]) {
-                    tabContents[tabId].classList.add('active');
-                }
-            });
+            const badge = btn.querySelector('.badge');
+            if (badge) badge.textContent = counts[btn.dataset.status] ?? 0;
         });
+    }
 
-        // ===== FILTER TABLE =====
-        function filterTable() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const method = document.getElementById('filterMethod').value.toLowerCase();
-            const date = document.getElementById('filterDate').value;
+    function loadList(page = 1) {
+        currentPage = page;
+        listContainer.style.opacity = '0.5';
+        listContainer.style.pointerEvents = 'none';
 
-            const rows = document.querySelectorAll('#transBody tr');
+        const url = new URL(transaksiUrl, window.location.origin);
+        if (currentSearch) url.searchParams.set('search', currentSearch);
+        url.searchParams.set('status', currentStatus);
+        if (filterPaket.value) url.searchParams.set('paket', filterPaket.value);
+        if (filterMetode.value) url.searchParams.set('metode_pembayaran', filterMetode.value);
+        if (filterDateFrom.value) url.searchParams.set('date_from', filterDateFrom.value);
+        if (filterDateTo.value) url.searchParams.set('date_to', filterDateTo.value);
+        url.searchParams.set('page', page);
 
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                const rowMethod = row.dataset.method ? row.dataset.method.toLowerCase() : '';
-                const rowDate = row.dataset.date || '';
-
-                let show = true;
-
-                if (query && !text.includes(query)) show = false;
-                if (method && rowMethod !== method) show = false;
-                if (date === 'today' && rowDate !== '2026-07-10') show = false;
-                if (date === 'week') {
-                    const d = new Date(rowDate);
-                    const weekStart = new Date('2026-07-05');
-                    const weekEnd = new Date('2026-07-11');
-                    if (d < weekStart || d > weekEnd) show = false;
-                }
-                if (date === 'month') {
-                    const d = new Date(rowDate);
-                    if (d.getMonth() !== 6 || d.getFullYear() !== 2026) show = false;
-                }
-
-                row.style.display = show ? '' : 'none';
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(res => res.json())
+            .then(data => {
+                listContainer.innerHTML = data.html;
+                updateSummaryCards(data.summary);
+                updateTabCounts(data.counts);
+            })
+            .catch(() => showToast('Gagal memuat data transaksi.', 'error'))
+            .finally(() => {
+                listContainer.style.opacity = '1';
+                listContainer.style.pointerEvents = '';
             });
-        }
+    }
 
-        // ===== INVOICE MODAL =====
-        function viewInvoice(id) {
-            const modal = document.getElementById('invoiceModal');
-            document.getElementById('invNumber').textContent = '#' + id;
-            document.getElementById('invStatus').textContent = 'Menunggu';
-            document.getElementById('invCustomer').textContent = 'Fatimah A.';
-            document.getElementById('invDate').textContent = '10 Juli 2026';
-            document.getElementById('invPackage').textContent = 'Pro';
-            document.getElementById('invMethod').textContent = 'QRIS';
-            document.getElementById('invDue').textContent = '12 Juli 2026';
-            document.getElementById('invStatusText').textContent = 'Menunggu Pembayaran';
-            document.getElementById('invTotal').textContent = 'Rp 450.000';
+    searchInput.addEventListener('input', function () {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            currentSearch = this.value.trim();
+            loadList(1);
+        }, 400);
+    });
 
-            modal.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
+    [filterPaket, filterMetode, filterDateFrom, filterDateTo].forEach(el => {
+        el.addEventListener('change', () => loadList(1));
+    });
 
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        // ===== NEW INVOICE MODAL =====
-        function openNewInvoice() {
-            document.getElementById('newInvoiceModal').classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeNewInvoiceModal() {
-            document.getElementById('newInvoiceModal').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        function saveNewInvoice(e) {
-            e.preventDefault();
-            showToast('Invoice baru berhasil dibuat!');
-            closeNewInvoiceModal();
-        }
-
-        // Close modals on backdrop click
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    this.classList.remove('open');
-                    document.body.style.overflow = '';
-                }
-            });
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentStatus = this.dataset.status;
+            loadList(1);
         });
+    });
 
-        // ===== TOAST =====
-        function showToast(message, type = 'success') {
-            const existing = document.querySelector('.toast-custom');
-            if (existing) existing.remove();
+    // Event delegation utk tombol pagination (tabel di-render ulang tiap loadList)
+    listContainer.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-page]');
+        if (!btn || btn.disabled) return;
+        loadList(parseInt(btn.dataset.page, 10));
+    });
 
-            const toast = document.createElement('div');
-            toast.className = 'toast-custom';
-            if (type === 'error') toast.classList.add('error');
+    // ===== MODAL DETAIL =====
+    const detailModalOverlay = document.getElementById('detailModalOverlay');
+    const detailFinalActions = document.getElementById('detailFinalActions');
+    const detailCatatanInput = document.getElementById('detailCatatanInput');
+    let currentDetail = null; // { id, invoice_number, nama, paket, nominal, status }
 
-            const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-            toast.innerHTML = `
-                <i class="fas ${icon}"></i>
-                <span>${message}</span>
+    function setDetailFields(d) {
+        document.getElementById('detailInvoiceNumber').textContent = d.invoice_number ?? '-';
+        document.getElementById('detailStatusBadge').textContent = d.status_label ?? '-';
+        document.getElementById('detailStatusBadge').className = 'status-badge ' + (d.status ?? '');
+
+        document.getElementById('detailNamaMurid').textContent = d.murid?.nama ?? '-';
+        document.getElementById('detailWhatsappMurid').textContent = d.murid?.whatsapp ?? '-';
+        document.getElementById('detailEmailMurid').textContent = d.murid?.email ?? '-';
+        document.getElementById('detailPaketMurid').textContent = d.murid?.paket ?? '-';
+
+        document.getElementById('detailInvoice').textContent = d.invoice_number ?? '-';
+        document.getElementById('detailNominal').textContent = d.nominal != null ? ('Rp ' + Number(d.nominal).toLocaleString('id-ID')) : '-';
+        document.getElementById('detailMetode').textContent = d.metode_pembayaran_label ?? '-';
+        document.getElementById('detailStatusText').textContent = d.status_label ?? '-';
+        document.getElementById('detailWaktuDaftar').textContent = d.created_at ?? '-';
+        document.getElementById('detailWaktuVerifikasi').textContent = d.verified_at ?? '-';
+        document.getElementById('detailAdminVerifikator').textContent = d.verified_by ?? '-';
+
+        detailCatatanInput.value = d.catatan_internal ?? '';
+
+        const buktiSection = document.getElementById('buktiTransferSection');
+        if (d.has_bukti_transfer) {
+            buktiSection.style.display = '';
+            const previewUrl = `${transaksiUrl}/${d.id}/bukti-transfer`;
+            document.getElementById('buktiPreviewImg').src = previewUrl;
+            document.getElementById('btnLihatBukti').href = previewUrl;
+            document.getElementById('btnDownloadBukti').href = `${previewUrl}/download`;
+        } else {
+            buktiSection.style.display = 'none';
+        }
+
+        const activityTimeline = document.getElementById('activityTimeline');
+        activityTimeline.innerHTML = '';
+        (d.activities ?? []).forEach(a => {
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+            item.innerHTML = `
+                <div class="activity-dot"></div>
+                <div class="activity-content">
+                    <div class="activity-desc">${a.description}</div>
+                    <div class="activity-meta">${a.causer} &middot; ${a.created_at ?? '-'}</div>
+                </div>
             `;
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(20px)';
-                toast.style.transition = 'all 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
+            activityTimeline.appendChild(item);
+        });
+        if ((d.activities ?? []).length === 0) {
+            activityTimeline.innerHTML = '<p class="detail-hint">Belum ada aktivitas.</p>';
         }
 
-        // ===== ESCAPE KEY =====
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeInvoiceModal();
-                closeNewInvoiceModal();
-            }
-        });
+        // Aksi verifikasi/tolak cuma muncul kalau status masih bisa diproses
+        const canProcess = d.status === 'menunggu_pembayaran' || d.status === 'menunggu_verifikasi';
+        detailFinalActions.style.display = canProcess ? 'flex' : 'none';
+
+        currentDetail = d;
+    }
+
+    function openDetailModal(id) {
+        setDetailFields({});
+        detailModalOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(`${transaksiUrl}/${id}`, { headers: { 'Accept': 'application/json' } })
+            .then(res => {
+                if (!res.ok) throw new Error();
+                return res.json();
+            })
+            .then(data => {
+                setDetailFields(data.data);
+                // Indikator "baru" di baris tabel langsung hilang tanpa reload penuh
+                document.querySelectorAll(`#transaksiTable button[onclick="openDetailModal(${id})"]`)
+                    .forEach(btn => {
+                        const dot = btn.closest('tr')?.querySelector('.new-dot');
+                        if (dot) dot.remove();
+                    });
+            })
+            .catch(() => {
+                showToast('Gagal memuat detail transaksi.', 'error');
+                closeDetailModal();
+            });
+    }
+
+    function closeDetailModal() {
+        detailModalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    detailModalOverlay.addEventListener('click', function (e) {
+        if (e.target === this) closeDetailModal();
+    });
+
+    // ===== CATATAN INTERNAL =====
+    function saveCatatan() {
+        if (!currentDetail) return;
+        const btn = document.getElementById('btnSimpanCatatan');
+        btn.disabled = true;
+
+        fetch(`${transaksiUrl}/${currentDetail.id}/catatan`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ catatan_internal: detailCatatanInput.value }),
+        })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.message || 'Gagal menyimpan catatan.', 'error');
+                    return;
+                }
+                showToast(data.message || 'Catatan berhasil disimpan.');
+            })
+            .catch(() => showToast('Terjadi kesalahan jaringan, coba lagi.', 'error'))
+            .finally(() => { btn.disabled = false; });
+    }
+
+    // ===== TOLAK TRANSAKSI =====
+    function rejectCurrentTransaksi() {
+        if (!currentDetail) return;
+        if (!confirm(`Yakin ingin menolak transaksi ${currentDetail.invoice_number}?`)) return;
+
+        fetch(`${transaksiUrl}/${currentDetail.id}/reject`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.message || 'Gagal menolak transaksi.', 'error');
+                    return;
+                }
+                showToast(data.message || 'Transaksi berhasil ditolak.');
+                closeDetailModal();
+                loadList(currentPage);
+            })
+            .catch(() => showToast('Terjadi kesalahan jaringan, coba lagi.', 'error'));
+    }
+
+    // ===== MODAL VERIFIKASI =====
+    const verifyModalOverlay = document.getElementById('verifyModalOverlay');
+    const verifyForm = document.getElementById('verifyForm');
+    const verifyBuktiInput = document.getElementById('verifyBuktiInput');
+    const verifyPreviewImg = document.getElementById('verifyPreviewImg');
+    const btnVerifySubmit = document.getElementById('btnVerifySubmit');
+
+    function openVerifyModalFromDetail() {
+        if (!currentDetail) return;
+        document.getElementById('verifyInvoice').textContent = currentDetail.invoice_number ?? '-';
+        document.getElementById('verifyNama').textContent = currentDetail.murid?.nama ?? '-';
+        document.getElementById('verifyPaket').textContent = currentDetail.murid?.paket ?? currentDetail.paket ?? '-';
+        document.getElementById('verifyNominal').textContent = currentDetail.nominal != null ? ('Rp ' + Number(currentDetail.nominal).toLocaleString('id-ID')) : '-';
+
+        verifyForm.reset();
+        verifyPreviewImg.style.display = 'none';
+        closeDetailModal();
+        verifyModalOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeVerifyModal() {
+        verifyModalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    verifyModalOverlay.addEventListener('click', function (e) {
+        if (e.target === this) closeVerifyModal();
+    });
+
+    verifyBuktiInput.addEventListener('change', function () {
+        const file = this.files?.[0];
+        if (!file) {
+            verifyPreviewImg.style.display = 'none';
+            return;
+        }
+        verifyPreviewImg.src = URL.createObjectURL(file);
+        verifyPreviewImg.style.display = 'block';
+    });
+
+    verifyForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!currentDetail) return;
+
+        const formData = new FormData();
+        formData.append('bukti_transfer', verifyBuktiInput.files[0]);
+        formData.append('catatan_internal', document.getElementById('verifyCatatanInput').value);
+
+        btnVerifySubmit.disabled = true;
+        const originalHtml = btnVerifySubmit.innerHTML;
+        btnVerifySubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+        fetch(`${transaksiUrl}/${currentDetail.id}/verify`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.message || (data.errors ? Object.values(data.errors)[0][0] : 'Terjadi kesalahan, coba lagi.'), 'error');
+                    return;
+                }
+                showToast(data.message || 'Pembayaran berhasil diverifikasi.');
+                closeVerifyModal();
+                loadList(currentPage);
+            })
+            .catch(() => showToast('Terjadi kesalahan jaringan, coba lagi.', 'error'))
+            .finally(() => {
+                btnVerifySubmit.disabled = false;
+                btnVerifySubmit.innerHTML = originalHtml;
+            });
+    });
+
+    // ===== ESCAPE KEY =====
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeDetailModal();
+            closeVerifyModal();
+        }
+    });
+
+    // ===== TOAST =====
+    function showToast(message, type = 'success') {
+        const existing = document.querySelector('.toast-custom');
+        if (existing) existing.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'toast-custom' + (type === 'error' ? ' error' : '');
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(20px)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
 </script>
 @endpush

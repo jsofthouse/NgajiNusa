@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Murid extends Model
@@ -27,6 +28,11 @@ class Murid extends Model
         return $this->belongsTo(ReferralAgent::class);
     }
 
+    public function transaksi(): HasMany
+    {
+        return $this->hasMany(Transaksi::class);
+    }
+
     // Daftar valid, dipakai juga di Form Request validasi
     public const LEVEL_OPTIONS = [
         'Hijaiyah',
@@ -44,4 +50,9 @@ class Murid extends Model
     ];
 
     public const STATUS_DAFTAR = 'Daftar';
+
+    // Ditambahkan bersamaan dengan modul Transaksi (2026-07-13, dikonfirmasi owner) —
+    // auto-set saat TransaksiService::verifyPayment() berhasil. Status Murid lain
+    // (Pending/Nonaktif/dst) masih belum didefinisikan, tunggu keputusan terpisah.
+    public const STATUS_AKTIF = 'Aktif';
 }

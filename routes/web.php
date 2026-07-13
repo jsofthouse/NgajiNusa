@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminMuridController;
+use App\Http\Controllers\AdminTransaksiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MuridController;
 use App\Http\Controllers\ReferralAgentController;
@@ -44,9 +45,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return view('admin.dashboard');
     })->name('dashboard');
 
-    Route::get('/transaksi', function () {
-        return view('admin.transaksi');
-    })->name('transaksi');
+    // ===== TRANSAKSI (Manajemen Transaksi, CRUD nyata, AJAX) =====
+    Route::get('/transaksi', [AdminTransaksiController::class, 'index'])->name('transaksi.index');
+    Route::get('/transaksi/{transaksi}', [AdminTransaksiController::class, 'show'])->name('transaksi.show');
+    Route::post('/transaksi/{transaksi}/verify', [AdminTransaksiController::class, 'verify'])->name('transaksi.verify');
+    Route::post('/transaksi/{transaksi}/reject', [AdminTransaksiController::class, 'reject'])->name('transaksi.reject');
+    Route::patch('/transaksi/{transaksi}/catatan', [AdminTransaksiController::class, 'updateCatatan'])->name('transaksi.catatan');
+    Route::get('/transaksi/{transaksi}/bukti-transfer', [AdminTransaksiController::class, 'previewBukti'])->name('transaksi.bukti.preview');
+    Route::get('/transaksi/{transaksi}/bukti-transfer/download', [AdminTransaksiController::class, 'downloadBukti'])->name('transaksi.bukti.download');
 
     Route::get('/laporan', function () {
         return view('admin.laporan');
