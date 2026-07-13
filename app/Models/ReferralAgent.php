@@ -20,4 +20,14 @@ class ReferralAgent extends Model
     public const STATUS_ACTIVE = 'Aktif';
     public const STATUS_INACTIVE = 'Nonaktif';
 
-    // Dipakai ulang di Form Request validasi (StoreReferralAgentRequest/Update
+    // Dipakai ulang di Form Request validasi (StoreReferralAgentRequest/UpdateReferralAgentRequest)
+    public const STATUS_OPTIONS = [
+        self::STATUS_ACTIVE,
+        self::STATUS_INACTIVE,
+    ];
+
+    public function murid(): HasMany
+    {
+        return $this->hasMany(Murid::class);
+    }
+}

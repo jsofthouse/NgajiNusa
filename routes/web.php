@@ -57,4 +57,24 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     // Sekarang beneran ada view-nya (diambil dari tab tersembunyi di dashboard_html.html asli)
     Route::get('/murid', function () {
-        return vi
+        return view('admin.murid');
+    })->name('murid');
+
+    Route::get('/guru', function () {
+        return view('admin.guru');
+    })->name('guru');
+
+    Route::get('/jadwal', function () {
+        return view('admin.jadwal');
+    })->name('jadwal');
+
+    Route::get('/paket', function () {
+        return view('admin.paket');
+    })->name('paket');
+
+    // ===== REFERRAL AGENT =====
+    Route::get('/referral-agent', [ReferralAgentController::class, 'index'])->name('referral-agent.index');
+    Route::post('/referral-agent', [ReferralAgentController::class, 'store'])->name('referral-agent.store');
+    Route::put('/referral-agent/{referralAgent}', [ReferralAgentController::class, 'update'])->name('referral-agent.update');
+    Route::patch('/referral-agent/{referralAgent}/toggle-status', [ReferralAgentController::class, 'toggleStatus'])->name('referral-agent.toggle-status');
+});

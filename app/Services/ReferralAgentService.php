@@ -57,4 +57,51 @@ class ReferralAgentService
     }
 
     /**
-     * Generate kode referral acak (hu
+     * Generate kode referral acak (huruf kecil+angka) yang unik.
+     * Sengaja acak, bukan dari nama, biar tidak gampang ketebak.
+     * Huruf kecil semua biar gak terlalu "menonjol" keliatan sebagai kode referral di URL.
+     */
+    public function generateUniqueCode(int $length = 8): string
+    {
+        do {
+            $code = strtolower(Str::random($length));
+        } while (ReferralAgent::where('kode', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Bangun link referral lengkap (mis. https://domain.com/?share_via=KODE)
+     * untuk ditampilkan & di-copy dari halaman admin.
+     */
+    public function buildReferralLink(ReferralAgent $agent): string
+    {
+        return url('/') . '?' . self::QUERY_PARAM . '=' . $agent->kode;
+    }
+
+    /**
+     * Buat Referral Agent baru dengan kode auto-generate (12 karakter, unik).
+     * Status default Aktif kalau tidak diisi.
+     */
+    public function createAgent(array $data): ReferralAgent
+    {
+        $data['kode'] = $this->generateUniqueCode(12);
+        $data['status'] = $data['status'] ?? ReferralAgent::STATUS_ACTIVE;
+
+        return ReferralAgent::create($data);
+    }
+
+    /**
+     * Balik status Aktif <-> Nonaktif. Kode & histori referral tetap utuh.
+     */
+    public function toggleStatus(ReferralAgent $agent): ReferralAgent
+    {
+        $agent->status = $agent->status === ReferralAgent::STATUS_ACTIVE
+            ? ReferralAgent::STATUS_INACTIVE
+            : ReferralAgent::STATUS_ACTIVE;
+
+        $agent->save();
+
+        return $agent;
+    }
+}

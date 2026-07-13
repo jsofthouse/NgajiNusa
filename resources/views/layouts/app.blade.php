@@ -70,4 +70,21 @@
     @yield('content')
 
     <script>
-        // Bersihin query 
+        // Bersihin query param referral (?share_via=KODE) dari address bar setelah ke-capture
+        // di server (cookie sudah ke-set duluan sebelum halaman ini dikirim). Cuma kosmetik URL,
+        // gak mempengaruhi cookie/referral yang udah tersimpan.
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('{{ \App\Services\ReferralAgentService::QUERY_PARAM }}')) {
+                params.delete('{{ \App\Services\ReferralAgentService::QUERY_PARAM }}');
+                const cleanQuery = params.toString();
+                const cleanUrl = window.location.pathname + (cleanQuery ? '?' + cleanQuery : '') + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        })();
+    </script>
+
+    @stack('scripts')
+</body>
+
+</html>

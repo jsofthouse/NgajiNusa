@@ -80,4 +80,12 @@
         // ===== LOGOUT ===== (satu-satunya definisi, dipakai semua halaman admin)
         function confirmLogout(e) {
             e.preventDefault();
-    
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                document.getElementById('logoutForm').submit();
+            }
+        }
+    </script>
+
+    @stack('scripts')
+</body>
+</html>
