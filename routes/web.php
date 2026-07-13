@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminMuridController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MuridController;
 use App\Http\Controllers\ReferralAgentController;
@@ -55,10 +56,14 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
         return view('admin.pengaturan');
     })->name('pengaturan');
 
-    // Sekarang beneran ada view-nya (diambil dari tab tersembunyi di dashboard_html.html asli)
-    Route::get('/murid', function () {
-        return view('admin.murid');
-    })->name('murid');
+    // ===== MURID (CRUD nyata, AJAX) =====
+    // /murid/export didaftarkan sebelum /murid/{murid} biar "export" gak ketangkep sbg route model binding.
+    Route::get('/murid/export', [AdminMuridController::class, 'export'])->name('murid.export');
+    Route::get('/murid', [AdminMuridController::class, 'index'])->name('murid.index');
+    Route::post('/murid', [AdminMuridController::class, 'store'])->name('murid.store');
+    Route::get('/murid/{murid}', [AdminMuridController::class, 'show'])->name('murid.show');
+    Route::put('/murid/{murid}', [AdminMuridController::class, 'update'])->name('murid.update');
+    Route::delete('/murid/{murid}', [AdminMuridController::class, 'destroy'])->name('murid.destroy');
 
     Route::get('/guru', function () {
         return view('admin.guru');

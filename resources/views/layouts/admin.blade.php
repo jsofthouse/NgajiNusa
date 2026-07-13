@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('title', 'NgajiNusa - Dashboard Admin')</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -26,7 +27,7 @@
         <ul class="sidebar-menu">
             <li class="menu-label">Main Menu</li>
             <li><a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><i class="fas fa-th-large"></i> Dashboard</a></li>
-            <li><a href="{{ route('admin.murid') }}" class="{{ request()->routeIs('admin.murid') ? 'active' : '' }}"><i class="fas fa-user-graduate"></i> Murid</a></li>
+            <li><a href="{{ route('admin.murid.index') }}" class="{{ request()->routeIs('admin.murid.*') ? 'active' : '' }}"><i class="fas fa-user-graduate"></i> Murid</a></li>
             <li><a href="{{ route('admin.guru') }}" class="{{ request()->routeIs('admin.guru') ? 'active' : '' }}"><i class="fas fa-chalkboard-teacher"></i> Guru</a></li>
             <li><a href="{{ route('admin.jadwal') }}" class="{{ request()->routeIs('admin.jadwal') ? 'active' : '' }}"><i class="fas fa-calendar-alt"></i> Jadwal</a></li>
             <li><a href="{{ route('admin.transaksi') }}" class="{{ request()->routeIs('admin.transaksi') ? 'active' : '' }}"><i class="fas fa-credit-card"></i> Transaksi</a></li>

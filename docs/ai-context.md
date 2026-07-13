@@ -198,6 +198,7 @@ Koneksi aktif: **MySQL/MariaDB** (`ngaji-nusa`). Semua tabel dibuat via migratio
 | paket | string(50) | salah satu `Murid::PAKET_OPTIONS` |
 | status | string(30) | default `'Daftar'`, index |
 | referral_agent_id | bigint FK nullable | → `referral_agents.id`, `nullOnDelete()` |
+| deleted_at | timestamp nullable | Soft delete (migration `add_soft_deletes_to_murid_table`, 2026-07-13). Model `Murid` pakai trait `SoftDeletes` |
 | timestamps | | |
 
 Index: `status`, `email`. Fillable termasuk semua kolom di atas + `referral_agent_id`.
@@ -268,7 +269,12 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | GET    | `admin/transaksi`  | `admin.transaksi`  | closure → view           | **auth**        | Mock                                   |
 | GET    | `admin/laporan`    | `admin.laporan`    | closure → view           | **auth**        | Mock                                   |
 | GET    | `admin/pengaturan` | `admin.pengaturan` | closure → view           | **auth**        | Mock (referensi WA/Zoom placeholder)   |
-| GET    | `admin/murid`      | `admin.murid`      | closure → view           | **auth**        | Mock (belum CRUD)                      |
+| GET    | `admin/murid/export` | `admin.murid.export` | `AdminMuridController@export` | **auth** | Export seluruh data murid ke CSV (tanpa filter) |
+| GET    | `admin/murid`      | `admin.murid.index`| `AdminMuridController@index` | **auth**   | List murid (pagination + search, AJAX-aware via `expectsJson()`) |
+| POST   | `admin/murid`      | `admin.murid.store`| `AdminMuridController@store` | **auth**   | Tambah murid (AJAX/JSON)                |
+| GET    | `admin/murid/{murid}` | `admin.murid.show` | `AdminMuridController@show` | **auth**  | Detail murid (JSON, dipakai modal detail) |
+| PUT    | `admin/murid/{murid}` | `admin.murid.update` | `AdminMuridController@update` | **auth** | Edit murid (AJAX/JSON)                  |
+| DELETE | `admin/murid/{murid}` | `admin.murid.destroy` | `AdminMuridController@destroy` | **auth** | Soft delete murid (AJAX/JSON)            |
 | GET    | `admin/guru`       | `admin.guru`       | closure → view           | **auth**        | Mock                                   |
 | GET    | `admin/jadwal`     | `admin.jadwal`     | closure → view           | **auth**        | Mock                                   |
 | GET    | `admin/paket`      | `admin.paket`      | closure → view           | **auth**        | Mock                                   |
@@ -277,7 +283,7 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | PUT    | `admin/referral-agent/{referralAgent}` | `admin.referral-agent.update` | `ReferralAgentController@update` | **auth** | Edit Referral Agent |
 | PATCH  | `admin/referral-agent/{referralAgent}/toggle-status` | `admin.referral-agent.toggle-status` | `ReferralAgentController@toggleStatus` | **auth** | Toggle Aktif/Nonaktif |
 
-**Catatan:** sebagian besar route admin masih **closure** return view statis — kecuali `admin.referral-agent.*` yang sudah pakai controller nyata. Health check `/up` aktif (dari `bootstrap/app.php`). Exception di-render JSON hanya untuk `api/*` (belum ada route api).
+**Catatan:** sebagian besar route admin masih **closure** return view statis — kecuali `admin.referral-agent.*` dan `admin.murid.*` yang sudah pakai controller nyata. Route name `admin.murid` (lama, closure) berubah jadi `admin.murid.index` sebagai konsekuensi RESTful CRUD — sidebar & `section-tabs` partial sudah disesuaikan. `admin/murid/export` didaftarkan **sebelum** `admin/murid/{murid}` supaya tidak ketangkep sebagai route model binding. Health check `/up` aktif (dari `bootstrap/app.php`). Exception di-render JSON hanya untuk `api/*` (belum ada route api) — konsekuensinya endpoint admin/murid/* yang error di luar validasi (404/500) balikin HTML, bukan JSON; ditangani di JS via generic catch/toast.
 
 ---
 
@@ -302,12 +308,12 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 - Landing page publik + modal pendaftaran (frontend).
 - Pendaftaran murid publik (form → validasi → normalisasi WA → simpan DB → JSON response).
 - Referral Agent **backend + UI admin** (model, migration termasuk kolom `email`, `ReferralAgentService`, cookie capture & resolve, generator kode unik, `ReferralAgentController` CRUD + toggle status). Capture referral jalan di `/` dan `/daftar`, param URL `?share_via=KODE`. Migration sudah dijalankan di lokal.
+- **Admin Murid (CRUD nyata, AJAX)** — list (pagination + search server-side + total + empty state), tambah/edit via modal (validasi Form Request, normalisasi WA identik pendaftaran publik), detail via modal (fetch JSON, style sama Referral Agent), soft delete + toast + reload async, export CSV seluruh data. `AdminMuridController`, `MuridService`, `StoreAdminMuridRequest`/`UpdateAdminMuridRequest`. Migration `add_soft_deletes_to_murid_table` **belum dijalankan di lokal** (lihat §11).
 - Visitor logging (`LogVisitor` + `visitor_logs`).
 - Key-value settings (`admin_settings` + `AdminSetting::get()`).
 
 **🚧 In Progress**
 
-- Modul admin Murid (view `admin/murid` ada, **belum** controller/CRUD/data).
 - Halaman admin lain (guru, jadwal, paket, transaksi, laporan, pengaturan) = view statis, menunggu backend.
 
 **📋 Planned**
@@ -323,25 +329,32 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 
 ## 11. Last Completed Feature
 
-- **Nama fitur:** Admin Referral Agent (UI admin + penyesuaian backend Referral), termasuk fix pasca-review.
+- **Nama fitur:** Admin Murid (CRUD nyata, AJAX) — modul admin Murid diubah dari view mock jadi CRUD fungsional penuh.
 - **Tanggal:** 2026-07-13.
 - **Perubahan utama:**
-    - Menu sidebar + halaman `admin/referral-agent` (list, tambah/edit via modal, toggle Aktif/Nonaktif, copy kode & link referral).
-    - Migration baru: kolom `email` (unique) di `referral_agents` (disiapkan untuk login Agent nanti, belum diimplementasikan) + unique index `whatsapp`.
-    - `ReferralAgentService`: tambah konstanta `QUERY_PARAM = 'share_via'` (ganti literal `'ref'`), method baru `buildReferralLink()`, `createAgent()` (auto kode 12 karakter via `generateUniqueCode(12)`), `toggleStatus()`.
-    - Capture referral sekarang jalan juga di route `/` (root), tidak cuma `/daftar` — supaya link `domain.com/?share_via=KODE` yang di-copy dari admin beneran ke-track.
-    - `ReferralAgentController` (index/store/update/toggleStatus) + `StoreReferralAgentRequest`/`UpdateReferralAgentRequest`.
-    - **Fix pasca-review (sama hari):** (1) Tombol Copy Kode/Link ditambah fallback `execCommand('copy')` via textarea sementara — `navigator.clipboard` gagal diam-diam di non-secure context (`http://ngaji-nusa.test` lokal); di VPS dengan HTTPS otomatis pakai clipboard API asli, gak perlu ubah apa-apa lagi. (2) `generateUniqueCode()` diubah dari `strtoupper()` jadi `strtolower()` — kode referral sekarang huruf kecil+angka, biar gak terlalu "ketara" di URL. (3) `layouts/app.blade.php` dapat script kecil yang membersihkan `?share_via=KODE` dari address bar via `history.replaceState()` setelah cookie ke-capture di server — murni kosmetik URL, cookie tetap tersimpan.
-- **File utama yang berubah:** migration baru `add_email_and_unique_constraints_to_referral_agents_table`, `app/Models/ReferralAgent.php`, `app/Services/ReferralAgentService.php`, `app/Http/Controllers/ReferralAgentController.php`, `app/Http/Requests/StoreReferralAgentRequest.php`, `app/Http/Requests/UpdateReferralAgentRequest.php`, `routes/web.php`, `resources/views/admin/referral-agent.blade.php` (baru), `resources/views/layouts/admin.blade.php`, `resources/views/layouts/app.blade.php`, `public/css/admin-referral-agent.css` (baru).
-- **Dampak:** Fitur Referral Agent sekarang punya UI admin lengkap dan sudah di-test manual oleh owner (copy, generate kode, URL cleanup — semua oke). Query param URL referral berubah dari `?ref=` ke `?share_via=` — link lama berformat `?ref=` berhenti berfungsi (kemungkinan belum ada yang beredar karena UI admin belum pernah ada sebelumnya). **Migration sudah dijalankan manual oleh owner di lokal** — beres.
+    - **List:** `AdminMuridController@index` — pagination (`paginate(10)`), search server-side (nama/email/whatsapp, satu input, debounce 400ms di JS), total murid, empty state, eager load `referralAgent` (dipakai modal detail, kolomnya sendiri **tidak** ditampilkan di tabel sesuai requirement). Endpoint yang sama dipakai untuk render awal (Blade) maupun reload AJAX (deteksi via `expectsJson()` — request fetch selalu kirim header `Accept: application/json`), yang AJAX balikin fragment HTML (`admin/partials/murid-list.blade.php`) supaya markup baris & pagination gak dobel ditulis di JS.
+    - **Tambah/Edit:** satu modal dinamis (mode ditentukan via `editingId` di JS), field Nama/Email/WhatsApp/Level Belajar/Paket. Tambah: status otomatis `Daftar`, referral agent selalu kosong. Edit: status & referral agent tidak disentuh form ini (belum ada keputusan owner soal workflow perubahan status). Proteksi "unsaved changes" saat modal ditutup tanpa simpan (`confirm()` kalau field berubah dari snapshot awal) — berlaku juga di mode Tambah karena satu handler close yang sama.
+    - **Detail:** modal terpisah, style identik Referral Agent (`.modal-overlay`/`.modal`), tapi datanya di-fetch live via `GET admin/murid/{murid}` (bukan dari data-attribute row) supaya selalu up-to-date. Referral Agent kosong ditampilkan `-`.
+    - **Soft delete:** trait `SoftDeletes` di model `Murid` + migration `add_soft_deletes_to_murid_table` (kolom `deleted_at`). Hapus = confirm → `DELETE admin/murid/{murid}` → toast → reload async. Belum ada halaman Trash/Restore (sesuai scope).
+    - **Export CSV:** `GET admin/murid/export`, seluruh data (tanpa filter/search), `streamDownload` + BOM UTF-8 biar kebaca rapi di Excel. Tombol Export disabled otomatis kalau total murid 0 (dicek server-side saat render awal, & di-update di JS tiap reload).
+    - **Validasi baru:** `StoreAdminMuridRequest` & `UpdateAdminMuridRequest` (beda dari `StoreMuridRequest` publik karena butuh unique email & whatsapp). Normalisasi nomor WA dipindah ke `MuridService::normalizeWhatsapp()` (logic identik `MuridController::normalizeWhatsapp()` publik, **tidak** merefactor controller publik yang sudah ada) dan dijalankan di `prepareForValidation()` supaya pengecekan unique dibandingkan dengan format yang sama seperti tersimpan di DB (62xxxx). Error selalu JSON 422 (`failedValidation()` di-override, pola sama seperti `StoreMuridRequest`).
+    - **Konsekuensi routing:** route `admin.murid` (closure lama) diganti jadi RESTful `admin.murid.index/store/show/update/destroy/export` — **rename route** yang tadinya cuma closure mock, dilakukan karena eksplisit diminta di requirement (bukan rename spekulatif). Sidebar (`layouts/admin.blade.php`) & `admin/partials/section-tabs.blade.php` sudah disesuaikan ke `admin.murid.index`.
+    - Tambah meta `<meta name="csrf-token">` di `layouts/admin.blade.php` (belum ada sebelumnya) — dibutuhkan semua fetch POST/PUT/DELETE di modul ini dan berpotensi dipakai modul admin AJAX lain ke depannya.
+- **File utama yang berubah/baru:** migration baru `add_soft_deletes_to_murid_table`, `app/Models/Murid.php` (trait `SoftDeletes`), `app/Services/MuridService.php` (baru), `app/Http/Controllers/AdminMuridController.php` (baru), `app/Http/Requests/StoreAdminMuridRequest.php` & `UpdateAdminMuridRequest.php` (baru), `routes/web.php`, `resources/views/admin/murid.blade.php` (full rewrite dari mock), `resources/views/admin/partials/murid-list.blade.php` (baru), `public/css/admin-murid.css` (baru), `resources/views/layouts/admin.blade.php`, `resources/views/admin/partials/section-tabs.blade.php`.
+- **Revisi 1 (sama hari, pasca-testing owner):** kolom "Tanggal Daftar" di list & CSV export diganti jadi "Waktu Daftar" — format tampilan `created_at` ditambah jam:menit (`d M Y H:i` di list, CSV tetap `Y-m-d H:i:s`). Tidak ada perubahan schema, cuma format display.
+- **Dampak:** Modul Murid sekarang CRUD penuh & connect ke DB nyata (sebelumnya mock statis dengan data dummy). Migration sudah dijalankan & ditest owner (list, tambah/edit, detail, soft delete, export CSV — semua oke).
+
+### Riwayat sebelumnya
+
+- **Admin Referral Agent** (2026-07-13, sesi sebelumnya): UI admin + backend Referral (lihat §18 Changelog untuk detail lengkap — dipindah dari sini supaya §11 hanya menyimpan fitur terakhir).
 
 ---
 
 ## 12. Next Development Priority
 
-1. **Modul admin Murid nyata** — `MuridController` untuk index (list + `paginate`, eager load `referralAgent`), detail, ubah status. Ganti view mock jadi data DB.
-2. **Wire `AdminSettingSeeder`** ke `DatabaseSeeder::run()` supaya `wa_admin_number` ter-seed.
-3. **Keputusan status Murid** — definisikan set status lengkap (Aktif/Pending/Nonaktif/…) bersama owner sebelum bangun logika status.
+1. **Wire `AdminSettingSeeder`** ke `DatabaseSeeder::run()` supaya `wa_admin_number` ter-seed.
+2. **Keputusan status Murid** — definisikan set status lengkap (Aktif/Pending/Nonaktif/…) bersama owner sebelum bangun logika status/transisi Daftar → Aktif.
+3. **Export Murid berdasarkan filter/search** + **Restore data soft delete** (prioritas tinggi, lihat `docs/todo.md`).
 4. **Desain modul pembayaran manual** (verifikasi bulanan, reminder) — sebelum menyentuh integrasi apa pun.
 5. **Kode referral vanity string** (prioritas rendah).
 
@@ -351,7 +364,8 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 
 - **`AdminSettingSeeder` belum dipanggil** dari `DatabaseSeeder::run()` → `php artisan db:seed` tidak akan mengisi `wa_admin_number`. `MuridController::store()` mengandalkan setting ini (fallback `null` jika kosong).
 - **`StorePostRequest` orphan** — ada di `app/Http/Requests`, `authorize()` return `false`, `rules()` kosong, tidak dipakai controller mana pun. Status tidak jelas → **jangan hapus / jangan bangun di atasnya** tanpa tanya.
-- **Route admin masih closure** return view statis untuk sebagian besar halaman — kecuali `admin.referral-agent.*` yang sudah pakai controller nyata.
+- **Route admin masih closure** return view statis untuk sebagian besar halaman — kecuali `admin.referral-agent.*` dan `admin.murid.*` yang sudah pakai controller nyata.
+- **Endpoint `admin/murid/*` balikin HTML (bukan JSON)** untuk error di luar validasi (404 model not found, 500, dsb) karena JSON exception rendering di `bootstrap/app.php` cuma di-scope ke `api/*`. Sudah ditangani generik di JS (fallback toast error), tapi pesan errornya jadi generik, bukan detail dari server.
 - **Belum ada test nyata** — hanya `ExampleTest` scaffolding di `tests/Feature` & `tests/Unit`.
 - **`AppServiceProvider` kosong** — `register()`/`boot()` belum dipakai.
 - **Inkonsistensi versi PHP** — CLAUDE.md/CLAUDE bilang PHP 8.5, `composer.json` pin `^8.3`.
@@ -372,18 +386,23 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | `app/Http/Controllers/MuridController.php` | Landing + capture referral (`create`), simpan pendaftaran + normalisasi WA (`store`)                         |
 | `app/Http/Controllers/AuthController.php`  | Login form/store, logout                                                                                     |
 | `app/Http/Controllers/ReferralAgentController.php` | CRUD Referral Agent admin (index/store/update/toggleStatus)                                            |
+| `app/Http/Controllers/AdminMuridController.php` | CRUD Murid admin (index/store/show/update/destroy/export), thin — delegasi ke `MuridService`             |
 | `app/Http/Requests/StoreMuridRequest.php`  | Validasi pendaftaran, pesan ID, error selalu JSON 422                                                        |
 | `app/Http/Requests/LoginRequest.php`       | Validasi + rate-limit + `authenticate()` login                                                               |
 | `app/Http/Requests/StoreReferralAgentRequest.php` / `UpdateReferralAgentRequest.php` | Validasi admin Referral Agent (email/whatsapp unik, status) |
+| `app/Http/Requests/StoreAdminMuridRequest.php` / `UpdateAdminMuridRequest.php` | Validasi admin Murid (email/whatsapp unik, normalisasi WA di `prepareForValidation()`, error selalu JSON 422) |
 | `app/Services/ReferralAgentService.php`    | Capture/resolve referral cookie, generate kode unik, buildReferralLink, createAgent, toggleStatus            |
+| `app/Services/MuridService.php`            | Business logic Murid admin: paginate+search, createMurid, updateMurid, normalizeWhatsapp, allForExport (CSV) |
 | `app/Http/Middleware/LogVisitor.php`       | Catat kunjungan non-admin ke `visitor_logs`                                                                  |
-| `app/Models/Murid.php`                     | Model inti + konstanta `LEVEL_OPTIONS`/`PAKET_OPTIONS`/`STATUS_DAFTAR`                                       |
+| `app/Models/Murid.php`                     | Model inti + konstanta `LEVEL_OPTIONS`/`PAKET_OPTIONS`/`STATUS_DAFTAR` + trait `SoftDeletes` (baru 2026-07-13) |
 | `app/Models/ReferralAgent.php`             | Model agen + konstanta status/STATUS_OPTIONS + relasi `murid()`                                              |
 | `app/Models/AdminSetting.php`              | Key-value settings + helper `get()`                                                                          |
 | `app/Models/VisitorLog.php`                | Model log kunjungan                                                                                          |
 | `resources/views/pages/home.blade.php`     | Landing page + modal pendaftaran + JS `fetch(/daftar)`                                                       |
 | `resources/views/admin/referral-agent.blade.php` | List + modal tambah/edit Referral Agent                                                                |
-| `resources/views/layouts/admin.blade.php`  | Shell admin + form logout tersentralisasi + menu Referral Agent                                              |
+| `resources/views/admin/murid.blade.php`    | List + modal tambah/edit + modal detail Murid, AJAX (search/pagination/reload), toast                        |
+| `resources/views/admin/partials/murid-list.blade.php` | Partial tabel+pagination Murid, dipakai render awal & fragment AJAX                                |
+| `resources/views/layouts/admin.blade.php`  | Shell admin + form logout tersentralisasi + menu Referral Agent/Murid + meta `csrf-token` (baru 2026-07-13)  |
 | `resources/views/layouts/app.blade.php`    | Shell publik + script cleanup URL `?share_via=`                                                              |
 | `database/seeders/AdminSettingSeeder.php`  | Seed `wa_admin_number` (belum di-wire)                                                                       |
 | `CLAUDE.md`                                | Instruksi wajib AI — jangan diedit tanpa diminta                                                             |
@@ -450,6 +469,7 @@ npm install && npm run build
 
 | Tanggal    | Fitur                     | Ringkasan                                                                                                                      | Dampak                                                                   |
 | ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| 2026-07-13 | Admin Murid (CRUD nyata, AJAX) | Modul admin Murid diubah dari view mock jadi CRUD fungsional: list (pagination+search server-side+total+empty state, eager load referralAgent), tambah/edit via modal (status otomatis Daftar, referral kosong, normalisasi WA identik publik, unsaved-changes confirm), detail via modal (fetch JSON, style Referral Agent), soft delete (`SoftDeletes` + migration baru) + toast + reload async, export CSV seluruh data (tombol disabled kalau kosong). Controller/Service/Request baru: `AdminMuridController`, `MuridService`, `StoreAdminMuridRequest`/`UpdateAdminMuridRequest`. Route `admin.murid` (closure) → `admin.murid.index` (RESTful), sidebar & section-tabs disesuaikan. Tambah meta `csrf-token` di layout admin. | Owner sekarang bisa kelola data murid nyata dari admin (sebelumnya cuma dummy). **Migration `add_soft_deletes_to_murid_table` perlu `php artisan migrate` manual** sebelum modul ini jalan. Route name lama `admin.murid` (closure mock) tidak ada lagi, diganti `admin.murid.index`. |
 | 2026-07-13 | docs: SOP Wrap-up Workflow | Tambah `docs/workflow-wrapup.md` — SOP wajib proses wrap-up (analisis perubahan, update dokumentasi, pembagian commit per Logical Change, format laporan baku). Dirujuk dari §16 | Proses wrap-up ke depan lebih terstandar & konsisten; tidak mengubah kode/fitur apa pun |
 | 2026-07-13 | Admin Referral Agent (UI) | Halaman & menu admin `admin/referral-agent` (list, tambah/edit modal, toggle status, copy kode & link). Kolom `email` (unique) ditambah ke `referral_agents`. Param URL referral `?ref=` → `?share_via=` via konstanta. Capture referral jalan juga di `/`. Fix pasca-review: copy pakai fallback `execCommand`, kode referral huruf kecil, URL `?share_via=` dibersihin otomatis pakai `history.replaceState()` | UI Referral Agent lengkap & sudah ditest owner. Link lama format `?ref=` berhenti kerja (belum pernah dipakai publik). Migration sudah dijalankan manual oleh owner |
 | 2026-07-13 | Admin Area Authentication | Semua `admin.*` dilindungi `auth`; hapus duplikat `GET /login`; logout disentralisasi ke layout (submit `POST /logout` nyata)  | Area admin tertutup guest; logout fungsional. Belum ada role             |
@@ -512,7 +532,7 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 14. Referral: `?share_via=KODE` (param URL, konstanta `ReferralAgentService::QUERY_PARAM`) → cookie 30 hari → auto-resolve `referral_agent_id` saat daftar. Capture jalan di `/` & `/daftar`. **UI admin sudah ada** (`admin/referral-agent`, sejak 2026-07-13).
 15. Auth: built-in Laravel session (**bukan Breeze**), login rate-limit 5/menit, redirect ke `admin.dashboard`.
 16. Semua route `admin.*` dilindungi middleware `auth`; guest → login. **Tidak ada role/permission**.
-17. Halaman admin (dashboard, murid, guru, jadwal, paket, transaksi, laporan, pengaturan) masih **view mock statis** — kecuali Referral Agent yang sudah pakai controller nyata.
+17. Halaman admin (dashboard, guru, jadwal, paket, transaksi, laporan, pengaturan) masih **view mock statis** — kecuali Referral Agent dan **Murid** (sejak 2026-07-13) yang sudah pakai controller nyata.
 18. Logout tersentralisasi di `layouts/admin.blade.php` (sebelumnya mock, sudah diperbaiki 2026-07-13).
 19. `LogVisitor` mencatat kunjungan GET non-admin ke `visitor_logs` (dedup tanggal+path+IP, increment hit).
 20. Settings global = key-value `admin_settings`, akses `AdminSetting::get()`. `wa_admin_number` dipakai di response pendaftaran.
@@ -525,11 +545,11 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 27. App di belakang Cloudflare (`trustProxies`). Health check `/up` aktif.
 28. Session/cache/queue driver = `database`; timezone `Asia/Jakarta`; locale `en`.
 29. Keputusan tertunda: set status Murid lengkap, role/permission system, workflow pembayaran, delivery Zoom.
-30. Prioritas berikutnya: modul Murid admin nyata → wire seeder → definisi status Murid.
+30. Prioritas berikutnya: wire seeder `AdminSettingSeeder` → definisi status Murid → export by filter & restore soft delete.
 31. SSOT dokumentasi = file ini; kalau konflik, **kode menang**, lalu perbarui file ini.
 32. Guardrail utama: no rename, no schema change tanpa izin, no terjemah istilah domain, no refactor spekulatif, no auto-billing.
 33. Owner = solo dev, komunikasi santai-akrab tapi profesional; kirim hanya file terdampak saat revisi.
-34. Fitur terakhir selesai: Admin Referral Agent — UI admin + `email` di `referral_agents` + param `?share_via=` (2026-07-13), migration sudah dijalankan.
+34. Fitur terakhir selesai: Admin Murid (CRUD nyata, AJAX) — list/tambah/edit/detail/soft delete/export CSV, kolom "Waktu Daftar" (tanggal+jam:menit) (2026-07-13). Migration sudah dijalankan & ditest owner.
 
 ## Server Specs
 

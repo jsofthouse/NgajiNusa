@@ -1,0 +1,67 @@
+/* ===== ADMIN MURID - style tambahan di atas admin-dashboard.css ===== */
+
+.field-error {
+    display: block;
+    color: #d64545;
+    font-size: 0.78rem;
+    margin-top: 4px;
+}
+
+.panel-total {
+    color: var(--text-light);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.data-panel .panel-header .actions .btn-export:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.data-panel .panel-header .actions .btn-export:disabled:hover {
+    background: #eef2ee;
+}
+
+#muridListContainer {
+    transition: opacity 0.15s ease;
+}
+
+.pagination .pages button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination .pages button:disabled:hover {
+    background: transparent;
+}
+
+/* ===== DETAIL MODAL ===== */
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f4f0;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-row span {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.detail-row strong {
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
