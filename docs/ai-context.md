@@ -51,7 +51,7 @@ app/
   Providers/
 database/
   migrations/            users/cache/jobs (Laravel defaults), visitor_logs, murid, admin_settings, referral_agents, murid.referral_agent_id
-  factories/, seeders/    AdminUserSeeder.php (not yet called from DatabaseSeeder::run() — see §8)
+  factories/, seeders/    AdminSettingSeeder.php (not yet called from DatabaseSeeder::run() — see §8)
 resources/views/
   admin/                 dashboard, murid, guru, jadwal, paket, transaksi, laporan, pengaturan, partials/
   auth/login.blade.php
@@ -107,13 +107,14 @@ PROJECT_MEMORY.md       working notes from a prior codebase audit — do not ove
 - Payment is **manual monthly**, not auto-charged — never build auto-billing logic without explicit confirmation.
 - Referral: `GET /daftar?ref=KODE` validates the code against an active `ReferralAgent` and queues it into a 30-day `referral_code` cookie (`ReferralAgentService::captureFromRequest`). `POST /daftar` resolves `referral_agent_id` from that cookie (`resolveAgentIdFromCookie`) — never entered manually by the user.
 - Login: `POST /login` (`LoginRequest::authenticate`) is rate-limited to 5 attempts/min per email+IP; on success the session is regenerated and the user is redirected to `admin.dashboard`. `POST /logout` invalidates the session and regenerates the CSRF token.
+- The sidebar "Logout" link in `layouts/admin.blade.php` submits a hidden `#logoutForm` (POST to `route('logout')`, CSRF included) via `confirmLogout()`. Fixed 2026-07-13 — previously each of the 8 admin pages defined its own fake `confirmLogout()` that only showed a toast and never called the backend; the real, single implementation now lives in the layout only.
 
 ## 8. Known inconsistencies / open items
 
 - `StorePostRequest` exists in `app/Http/Requests` but no controller uses it, and `authorize()` returns `false`. Status unclear — don't delete or build around it without asking.
-- `routes/web.php` admin routes (dashboard, transaksi, laporan, pengaturan, murid, guru, jadwal, paket) currently just return static Blade views inline — no controllers, no auth/role middleware wired up yet, despite the file's own comment saying they should be.
-- `routes/web.php` registers `GET /login` **twice** — an old inline closure and the new `AuthController::create()`, both named `login`. The old closure (registered first) wins route matching, so `AuthController::create()` is currently dead code for GET requests. Needs cleanup (remove the old closure) — flagged, not yet fixed.
-- `database/seeders/AdminUserSeeder.php` exists but isn't called from `DatabaseSeeder::run()` — won't seed via `php artisan db:seed` until wired in.
+- `routes/web.php` admin routes (dashboard, transaksi, laporan, pengaturan, murid, guru, jadwal, paket) still return static Blade views inline via closures — no controllers yet. As of 2026-07-13 the whole `admin.` group **is** wrapped in the built-in `auth` middleware, so all 8 routes require a logged-in session; guests get redirected to `login`. No role/permission checks — deliberately, per project rules.
+- `routes/web.php` used to register `GET /login` twice (old closure + `AuthController::create()`, both named `login`). Fixed 2026-07-13 — the old closure was removed, `AuthController::create()` is now the only handler.
+- `database/seeders/AdminSettingSeeder.php` (seeds `admin_settings.wa_admin_number`) exists but isn't called from `DatabaseSeeder::run()` — won't seed via `php artisan db:seed` until wired in.
 - Role/permission approach (Spatie vs custom) is undecided — don't implement either speculatively.
 - `docs/features.md` lists a broad, unstatused feature wishlist (Authorization, Audit Log, Export/Import Excel, etc.) that does not reflect current implementation — treat §10 below (mirroring `docs/current_state.md`) as the source of truth for what's actually built.
 - Zoom access delivery mechanism after payment: not designed yet.
@@ -127,7 +128,7 @@ PROJECT_MEMORY.md       working notes from a prior codebase audit — do not ove
 
 ## 10. Feature status
 
-**Done:** Login (real session auth, rate-limited), basic Dashboard view, User CRUD (model level only — no controller/UI seen), Murid registration (public form → DB), Referral Agent backend (model, migration, service, cookie capture — no admin UI yet, see `docs/todo.md`).
+**Done:** Login (real session auth, rate-limited), Admin area authentication (all `admin.*` routes gated by built-in `auth` middleware, guest → `login` redirect, no role/permission layer), basic Dashboard view, User CRUD (model level only — no controller/UI seen), Murid registration (public form → DB), Referral Agent backend (model, migration, service, cookie capture — no admin UI yet, see `docs/todo.md`).
 **In progress:** Member/Murid admin module (view scaffolded, no controller), Payment module (not started in code).
 **Not started:** Reporting, Notifications, Role/permission system.
 
@@ -180,4 +181,4 @@ php artisan view:cache
 Ask before making architectural changes. Don't guess project conventions — check this file, `CLAUDE.md`, and the actual code (not just the aspirational `docs/*.md` files) before assuming a pattern exists.
 
 ---
-*Last verified against the codebase: 2026-07-12. Update this file whenever architecture, folder structure, business rules, or integrations change.*
+*Last verified against the codebase: 2026-07-13. Update this file whenever architecture, folder structure, business rules, or integrations change.*

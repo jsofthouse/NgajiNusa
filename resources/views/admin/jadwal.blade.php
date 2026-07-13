@@ -402,16 +402,6 @@
             showToast('Data berhasil diekspor ke Excel!');
         }
 
-        // ===== LOGOUT =====
-        function confirmLogout(e) {
-            e.preventDefault();
-            if (confirm('Apakah Anda yakin ingin logout?')) {
-                showToast('Anda telah logout.');
-                // Redirect to landing page
-                window.location.href = '#';
-            }
-        }
-
         // ===== TOAST =====
         function showToast(message) {
             const existing = document.querySelector('.toast-custom');

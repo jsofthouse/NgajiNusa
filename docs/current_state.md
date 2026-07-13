@@ -4,6 +4,7 @@ Completed
 
 - Login
 - Role Management
+- Admin Area Authentication (route-level guard, no role/permission)
 - Dashboard
 - User CRUD
 

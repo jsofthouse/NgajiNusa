@@ -10,5 +10,10 @@
 
 ## Bug / Tech Debt
 
-- [ ] `routes/web.php` mendaftarkan `GET /login` dua kali (closure lama baris ~30 + `AuthController::create` baris ~34, dua-duanya bernama `login`). Closure lama yang menang saat matching, jadi `AuthController::create()` saat ini dead code untuk GET. Hapus closure lama.
-- [ ] `database/seeders/AdminUserSeeder.php` belum dipanggil dari `DatabaseSeeder::run()` — tidak akan jalan lewat `php artisan db:seed` sampai ditambahkan.
+- [ ] `database/seeders/AdminSettingSeeder.php` (isi `wa_admin_number`) belum dipanggil dari `DatabaseSeeder::run()` — tidak akan jalan lewat `php artisan db:seed` sampai ditambahkan.
+
+## Selesai (2026-07-13)
+
+- [x] Admin Area Authentication: semua route `admin.*` di `routes/web.php` dibungkus middleware `auth` bawaan Laravel. Guest yang belum login otomatis diarahkan ke `/login`.
+- [x] `routes/web.php` mendaftarkan `GET /login` dua kali (closure lama + `AuthController::create`, dua-duanya bernama `login`). Closure lama dihapus, `AuthController::create()` sekarang satu-satunya handler.
+- [x] Tombol "Logout" di `layouts/admin.blade.php` ternyata cuma mock (toast + `window.location.href = '#'`, gak pernah hit `POST /logout`) — duplikat di 8 file `admin/*.blade.php`. Disentralisasi: satu implementasi nyata di layout, submit hidden form ke `route('logout')`.

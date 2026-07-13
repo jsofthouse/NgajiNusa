@@ -27,16 +27,12 @@ Route::post('/daftar', [MuridController::class, 'store'])
     ->name('murid.store');
 
 // ===== AUTH =====
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
-
 Route::get('/login', [AuthController::class, 'create'])->name('login');
 Route::post('/login', [AuthController::class, 'store']);
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 
-// ===== ADMIN (sebaiknya dibungkus middleware auth + prefix, contoh di bawah) =====
-Route::prefix('admin')->name('admin.')->group(function () {
+// ===== ADMIN (protected by auth middleware) =====
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('dashboard');

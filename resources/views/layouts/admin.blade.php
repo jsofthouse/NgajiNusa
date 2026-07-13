@@ -70,6 +70,21 @@
     {{-- Modal overlay ditempatkan di luar <main> (posisinya fixed/overlay) --}}
     @yield('modals')
 
+    {{-- ===== LOGOUT FORM (hidden, submits real POST /logout) ===== --}}
+    <form id="logoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
+        @csrf
+    </form>
+
+    <script>
+        // ===== LOGOUT ===== (satu-satunya definisi, dipakai semua halaman admin)
+        function confirmLogout(e) {
+            e.preventDefault();
+            if (confirm('Apakah Anda yakin ingin logout?')) {
+                document.getElementById('logoutForm').submit();
+            }
+        }
+    </script>
+
     @stack('scripts')
 </body>
 </html>

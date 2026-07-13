@@ -671,15 +671,6 @@
             });
         });
 
-        // ===== LOGOUT =====
-        function confirmLogout(e) {
-            e.preventDefault();
-            if (confirm('Apakah Anda yakin ingin logout?')) {
-                showToast('Anda telah logout.');
-                window.location.href = '#';
-            }
-        }
-
         // ===== TOAST =====
         function showToast(message, type = 'success') {
             const existing = document.querySelector('.toast-custom');
