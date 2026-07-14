@@ -33,6 +33,7 @@
             <li><a href="{{ route('admin.transaksi.index') }}" class="{{ request()->routeIs('admin.transaksi.*') ? 'active' : '' }}"><i class="fas fa-credit-card"></i> Transaksi</a></li>
             <li><a href="{{ route('admin.paket') }}" class="{{ request()->routeIs('admin.paket') ? 'active' : '' }}"><i class="fas fa-tags"></i> Paket</a></li>
             <li><a href="{{ route('admin.referral-agent.index') }}" class="{{ request()->routeIs('admin.referral-agent.*') ? 'active' : '' }}"><i class="fas fa-user-tie"></i> Referral Agent</a></li>
+            <li><a href="{{ route('admin.user.index') }}" class="{{ request()->routeIs('admin.user.*') ? 'active' : '' }}"><i class="fas fa-user-shield"></i> Manajemen User</a></li>
             <li class="menu-label">Lainnya</li>
             <li><a href="{{ route('admin.laporan') }}" class="{{ request()->routeIs('admin.laporan') ? 'active' : '' }}"><i class="fas fa-chart-bar"></i> Laporan</a></li>
             <li><a href="{{ route('admin.pengaturan') }}" class="{{ request()->routeIs('admin.pengaturan') ? 'active' : '' }}"><i class="fas fa-cog"></i> Pengaturan</a></li>

@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminMuridController;
 use App\Http\Controllers\AdminTransaksiController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MuridController;
 use App\Http\Controllers\ReferralAgentController;
@@ -88,4 +89,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/referral-agent', [ReferralAgentController::class, 'store'])->name('referral-agent.store');
     Route::put('/referral-agent/{referralAgent}', [ReferralAgentController::class, 'update'])->name('referral-agent.update');
     Route::patch('/referral-agent/{referralAgent}/toggle-status', [ReferralAgentController::class, 'toggleStatus'])->name('referral-agent.toggle-status');
+
+    // ===== MANAJEMEN USER (tab Admin — Guru/Murid menyusul, lihat docs/todo.md) =====
+    Route::get('/user', [AdminUserController::class, 'index'])->name('user.index');
+    Route::post('/user', [AdminUserController::class, 'store'])->name('user.store');
+    Route::get('/user/{user}', [AdminUserController::class, 'show'])->name('user.show');
+    Route::put('/user/{user}', [AdminUserController::class, 'update'])->name('user.update');
+    Route::delete('/user/{user}', [AdminUserController::class, 'destroy'])->name('user.destroy');
 });

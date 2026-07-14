@@ -4,7 +4,7 @@
 > Baca file ini **lebih dulu** sebelum `CLAUDE.md` atau `docs/*.md` lain. Jika terjadi konflik dokumentasi, **file ini menang** (lihat §17 Documentation Map), dan implementasi kode menang atas dokumentasi mana pun.
 > Semua isi di bawah sudah diverifikasi terhadap kode nyata. Tidak ada asumsi. Jika sesuatu belum dipastikan, ditandai eksplisit `[OPEN]`.
 >
-> **Last verified against codebase:** 2026-07-13.
+> **Last verified against codebase:** 2026-07-14.
 
 ---
 
@@ -184,8 +184,8 @@ Koneksi aktif: **MySQL/MariaDB** (`ngaji-nusa`). Semua tabel dibuat via migratio
 
 ### Tabel & kolom
 
-**`users`** (default Laravel auth)
-`id, name, email (unique), email_verified_at, password (hashed), remember_token, timestamps`. Plus `password_reset_tokens`, `sessions` (session driver = database).
+**`users`** (auth + Manajemen User Admin, sejak 2026-07-14)
+`id, name, email (unique), email_verified_at, password (hashed), role (string, default 'Admin', index), status (string, default 'Aktif', index), last_login_at (timestamp nullable), created_by (bigint FK nullable → users.id, nullOnDelete), updated_by (bigint FK nullable → users.id, nullOnDelete), remember_token, timestamps, deleted_at (SoftDeletes)`. Plus `password_reset_tokens`, `sessions` (session driver = database). Konstanta: `User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`/`ROLE_OPTIONS`, `User::STATUS_ACTIVE`/`STATUS_INACTIVE`/`STATUS_OPTIONS`. Relasi `createdBy()`/`updatedBy()` (self-referencing `belongsTo`).
 
 **`murid`** (tabel inti pendaftaran, **singular**)
 | Kolom | Tipe | Catatan |
@@ -311,6 +311,11 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | POST   | `admin/referral-agent` | `admin.referral-agent.store` | `ReferralAgentController@store` | **auth** | Tambah Referral Agent |
 | PUT    | `admin/referral-agent/{referralAgent}` | `admin.referral-agent.update` | `ReferralAgentController@update` | **auth** | Edit Referral Agent |
 | PATCH  | `admin/referral-agent/{referralAgent}/toggle-status` | `admin.referral-agent.toggle-status` | `ReferralAgentController@toggleStatus` | **auth** | Toggle Aktif/Nonaktif |
+| GET    | `admin/user` | `admin.user.index` | `AdminUserController@index` | **auth** | List User Admin (search nama/email + filter role/status + pagination, AJAX-aware) — baru 2026-07-14 |
+| POST   | `admin/user` | `admin.user.store` | `AdminUserController@store` | **auth** | Tambah Admin (hanya Super Admin, dicek di `UserService`) |
+| GET    | `admin/user/{user}` | `admin.user.show` | `AdminUserController@show` | **auth** | Detail User Admin (JSON) |
+| PUT    | `admin/user/{user}` | `admin.user.update` | `AdminUserController@update` | **auth** | Edit User Admin (hanya Super Admin) |
+| DELETE | `admin/user/{user}` | `admin.user.destroy` | `AdminUserController@destroy` | **auth** | Soft delete User Admin (hanya Super Admin, tidak bisa hapus diri sendiri) |
 | GET    | `admin/transaksi` | `admin.transaksi.index` | `AdminTransaksiController@index` | **auth** | List transaksi (filter status/paket/metode/tanggal + search + pagination, dashboard summary, AJAX-aware) |
 | GET    | `admin/transaksi/{transaksi}` | `admin.transaksi.show` | `AdminTransaksiController@show` | **auth** | Detail transaksi (JSON) — otomatis `markOpened()` |
 | POST   | `admin/transaksi/{transaksi}/verify` | `admin.transaksi.verify` | `AdminTransaksiController@verify` | **auth** | Verifikasi pembayaran (multipart: bukti_transfer + catatan_internal) |
@@ -330,8 +335,9 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 - **Logout flow:** tombol di `layouts/admin.blade.php` (`confirmLogout()` → submit hidden `#logoutForm` POST ke `route('logout')`, `@csrf`) → `Auth::guard('web')->logout()` → invalidate + regenerate token → redirect `login`. **Satu-satunya** implementasi logout ada di layout (sebelumnya tiap 8 halaman admin punya mock palsu; sudah disentralisasi 2026-07-13).
 - **Proteksi route:** middleware `auth` membungkus grup `admin.*`. Guest → `login`.
 - **Session:** driver `database`, lifetime 120 menit, tidak dienkripsi.
-- **Authorization / role / permission:** **BELUM ADA**, sengaja. Tidak ada Policy/Gate/Spatie. Semua user login = akses penuh admin.
-- **User provisioning:** hanya via seeder `DatabaseSeeder` (`test@example.com`). Belum ada registrasi user admin publik.
+- **Login diblokir kalau akun `status` Nonaktif** (ditambahkan 2026-07-14, `LoginRequest::authenticate()`) — cek setelah `Auth::attempt()` sukses, kalau Nonaktif langsung `Auth::logout()` + error. `last_login_at` di-update otomatis tiap login sukses.
+- **Authorization / role / permission:** keputusan "tertunda" **resolved sebagian** (2026-07-14, dikonfirmasi owner) — dipilih **custom role constant** (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`), bukan Spatie. **Scope masih terbatas ke modul Manajemen User Admin saja** (business rule dicek manual di `UserService`, BUKAN Gate/Policy/middleware global). Semua route `admin.*` lain masih tanpa role gate — user login apa pun (Admin/Super Admin) tetap akses penuh ke Murid/Transaksi/Referral Agent/dst. Permission granular per menu & per action (View/Create/Edit/Delete/Export/Verify/Approve/Reject) serta Multi Role **belum dikerjakan** — lihat `docs/todo.md`.
+- **User provisioning:** via seeder `DatabaseSeeder` (`test@example.com`, sekarang otomatis `role=Super Admin, status=Aktif`) + CRUD nyata via halaman **Manajemen User** (`admin/user`, tab Admin) — Super Admin bisa tambah Admin baru dari sana. Belum ada registrasi user admin publik/self-service.
 
 ---
 
@@ -347,70 +353,73 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 - **Admin Murid (CRUD nyata, AJAX)** — list (pagination + search server-side + total + empty state), tambah/edit via modal (validasi Form Request, normalisasi WA identik pendaftaran publik), detail via modal (fetch JSON, style sama Referral Agent), soft delete + toast + reload async, export CSV seluruh data. `AdminMuridController`, `MuridService`, `StoreAdminMuridRequest`/`UpdateAdminMuridRequest`. Migration `add_soft_deletes_to_murid_table` **belum dijalankan di lokal** (lihat §11).
 - Visitor logging (`LogVisitor` + `visitor_logs`).
 - Key-value settings (`admin_settings` + `AdminSetting::get()`).
-- **Admin Transaksi / Manajemen Transaksi (CRUD nyata, AJAX)** — verifikasi manual pembayaran transfer bank. Auto-create transaksi saat pendaftaran publik, dashboard summary (4 kartu), tab filter status + filter bar (search/paket/metode/rentang tanggal), indikator transaksi belum dibuka, modal Detail (info murid+transaksi, catatan internal editable, bukti transfer preview/lihat/download, histori aktivitas/audit trail), modal Verifikasi (upload bukti transfer wajib + catatan opsional → status Berhasil + murid otomatis Aktif), aksi Tolak. Skema future-proof utk payment gateway (belum diimplementasikan). Lihat §11 untuk detail lengkap.
+- **Admin Transaksi / Manajemen Transaksi (CRUD nyata, AJAX)** — verifikasi manual pembayaran transfer bank. Auto-create transaksi saat pendaftaran publik, dashboard summary (4 kartu), tab filter status + filter bar (search/paket/metode/rentang tanggal), indikator transaksi belum dibuka, modal Detail (info murid+transaksi, catatan internal editable, bukti transfer preview/lihat/download, histori aktivitas/audit trail), modal Verifikasi (upload bukti transfer wajib + catatan opsional → status Berhasil + murid otomatis Aktif), aksi Tolak. Skema future-proof utk payment gateway (belum diimplementasikan). Lihat §18 untuk detail lengkap fitur ini.
+- **Manajemen User — tab Admin (CRUD nyata, AJAX, baru 2026-07-14)** — list (search nama/email + filter role + filter status + pagination + sort terbaru), tambah/edit Admin via modal (password opsional saat edit), soft delete via modal konfirmasi. Role/status pakai konstanta (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`, `STATUS_ACTIVE`/`STATUS_INACTIVE`). Business rule role-scoped di `UserService` (bukan Gate/Policy global — lihat §9). Tab Guru & Murid di halaman ini **belum dikerjakan** (baru todo). Lihat §11 untuk detail lengkap.
 
 **🚧 In Progress**
 
 - Halaman admin lain (guru, jadwal, paket, laporan, pengaturan) = view statis, menunggu backend.
+- Manajemen User: tab Guru & tab Murid (baru tab Admin yang jadi).
 
 **📋 Planned**
 
 - Kode referral custom "vanity string" (prioritas rendah).
 - Integrasi payment gateway (Midtrans/Xendit/dll) — skema DB `transaksi` sudah future-proof (`gateway_provider`/`gateway_transaction_id`/`gateway_payload`), tapi belum ada SDK/config/controller apa pun.
 - Auto-create transaksi utk murid yang ditambah admin manual (lihat `docs/todo.md`).
+- Manajemen User: permission granular per menu & per action, Multi Role, Reset Password oleh Super Admin, Audit Log User, Login History, Force Logout, Avatar, 2FA, Invite via Email (lihat `docs/todo.md`).
 
 **❌ Not Started**
 
-- Reporting, Notifikasi (WA/email), integrasi Zoom, role/permission system, CRUD Guru/Jadwal/Paket, export/import Excel, audit log.
+- Reporting, Notifikasi (WA/email), integrasi Zoom, CRUD Guru/Jadwal/Paket, export/import Excel, audit log.
+- Role/permission system global (Gate/Policy/middleware lintas seluruh `admin.*`) — yang ada baru scoped ke modul Manajemen User Admin (lihat §9).
 
 ---
 
 ## 11. Last Completed Feature
 
-- **Nama fitur:** Admin Transaksi (Manajemen Transaksi) — modul baru verifikasi manual pembayaran pendaftaran murid (transfer bank), menggantikan view mock `admin/transaksi.blade.php`.
-- **Tanggal:** 2026-07-13.
-- **Keputusan owner sebelum implementasi (dikonfirmasi via tanya jawab):**
-    1. Murid otomatis jadi `Murid::STATUS_AKTIF` (baru) setelah transaksi diverifikasi berhasil.
-    2. Nominal transaksi otomatis diambil dari mapping harga paket sesuai landing page (`TransaksiService::PAKET_PRICES`), bukan input manual admin.
-    3. Auto-create transaksi **cuma** di flow pendaftaran publik (`POST /daftar`) — murid yang ditambah admin manual belum dapat transaksi otomatis (dicatat di `docs/todo.md`).
+- **Nama fitur:** Manajemen User — tab Admin (CRUD nyata akun Admin/Super Admin), fokus HANYA tab Admin sesuai requirement eksplisit — tab Guru & Murid sengaja belum dikerjakan (masuk `docs/todo.md`).
+- **Tanggal:** 2026-07-14.
+- **Konflik ditemukan sebelum implementasi & sudah dikonfirmasi owner:** requirement minta role custom (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`) + business rule berjenjang, padahal §9/§19/§20 lama menandai role/permission system sebagai "keputusan tertunda, jangan diputuskan sepihak". Ditanyakan dulu ke owner sebelum coding — dikonfirmasi **lanjut, anggap final**, dengan scope dibatasi: role check cuma di level Service utk modul ini (bukan Gate/Policy/middleware global — lihat §9).
+- **Keputusan tambahan di luar requirement awal (didokumentasikan transparan, bukan diam-diam):**
+    1. Login diblokir kalau akun `status` Nonaktif (`LoginRequest::authenticate()`) — konsekuensi langsung dari kolom Status yang diminta.
+    2. `last_login_at` di-update otomatis tiap login sukses — supaya kolom "Last Login" yang diminta di list beneran terisi.
 - **Perubahan utama:**
-    - **Database:** tabel baru `transaksi` (terpisah dari `murid`, sesuai requirement) & `transaksi_activities` (audit trail). Skema dibuat future-proof utk payment gateway: kolom `jenis`/`metode_pembayaran` sbg string enum (bukan DB enum, gampang tambah nilai baru), kolom `gateway_provider`/`gateway_transaction_id`/`gateway_payload` disiapkan tapi **belum dipakai**. Lihat §6 utk detail kolom lengkap.
-    - **Invoice number:** format `INV-00000001`, di-generate otomatis dari `id` setelah insert lewat `Transaksi::booted()` (event `created` + `saveQuietly()` biar gak infinite loop).
-    - **Auto-create transaksi:** `TransaksiService::createFromMurid()` dipanggil dari `MuridController@store` (ditambah param `TransaksiService`, **tidak** merefactor logic normalisasi WA yang sudah ada) — status awal `menunggu_pembayaran`.
-    - **List & filter:** `AdminTransaksiController@index` — search (invoice/nama murid/nomor WA), filter status/paket/metode/rentang tanggal, pagination, AJAX-aware (`expectsJson()`, pola sama Admin Murid). Dashboard summary (4 kartu: Menunggu Pembayaran, Menunggu Verifikasi, Berhasil, Pendapatan Bulan Ini — dihitung dari `verified_at` bulan berjalan) & badge angka tab filter selalu ikut ke-refresh tiap reload AJAX.
-    - **Indikator transaksi baru:** kolom `opened_at` (null = belum dibuka), bulatan merah di kolom Invoice, hilang otomatis (tanpa reload penuh, langsung dimanipulasi via JS) begitu admin buka Detail Transaksi pertama kali (`TransaksiService::markOpened()`).
-    - **Detail Transaksi:** modal (bukan halaman baru) — Informasi Murid, Informasi Transaksi, Catatan Internal Admin (textarea + tombol simpan, endpoint `PATCH .../catatan`, terpisah dari alur verifikasi), section Bukti Transfer (preview `<img>` + tombol Lihat/Download, cuma tampil kalau status Berhasil), Histori Aktivitas (timeline readonly dari `transaksi_activities`).
-    - **Verifikasi Pembayaran:** modal terpisah (dibuka dari tombol di Detail Transaksi) — readonly Invoice/Nama/Paket/Nominal, form Upload Bukti Transfer (wajib, image jpg/jpeg/png/webp max 2MB — `VerifyTransaksiRequest`) + Catatan Internal (opsional). Sukses → status `berhasil`, `verified_at`/`verified_by` tercatat, **murid auto-Aktif**.
-    - **Tolak transaksi:** aksi tambahan (`@reject`, tombol di Detail Transaksi, confirm-based) — **tidak ada di requirement awal**, ditambahkan supaya tab filter "Ditolak" (yang eksplisit diminta) benar-benar bisa tercapai statusnya.
-    - **Bukti transfer:** disimpan disk `local` (private, `storage/app/private/payment-proofs/{tahun}/{bulan}/{uuid}.{ext}`), nama file UUID (bukan nama murid/invoice). Preview/download lewat `Storage::response()`/`Storage::download()` (kontrol akses via `auth` middleware, bukan symlink publik).
-    - **Konsekuensi routing:** route `admin.transaksi` (closure lama) diganti jadi RESTful `admin.transaksi.index/show/verify/reject/catatan/bukti.preview/bukti.download` — pola sama seperti rename `admin.murid` sebelumnya. Sidebar & `admin/partials/section-tabs.blade.php` disesuaikan.
-- **File utama yang dibuat/berubah:** migration `create_transaksi_table` & `create_transaksi_activities_table`, `app/Models/Transaksi.php` & `TransaksiActivity.php` (baru), `app/Models/Murid.php` (tambah `STATUS_AKTIF` + relasi `transaksi()`), `app/Services/TransaksiService.php` (baru), `app/Http/Requests/VerifyTransaksiRequest.php` & `UpdateTransaksiCatatanRequest.php` (baru), `app/Http/Controllers/AdminTransaksiController.php` (baru), `app/Http/Controllers/MuridController.php` (inject `TransaksiService`), `routes/web.php`, `resources/views/admin/transaksi.blade.php` (full rewrite dari mock), `resources/views/admin/partials/transaksi-list.blade.php` (baru), `public/css/admin-transaksi.css`, `resources/views/layouts/admin.blade.php`, `resources/views/admin/partials/section-tabs.blade.php`, `docs/todo.md`.
-- **Dampak:** Owner sekarang bisa verifikasi pembayaran transfer manual langsung dari admin (sebelumnya cuma view mock dummy). Migration `create_transaksi_table` & `create_transaksi_activities_table` sudah dijalankan, testing fungsional di lokal sudah oke, commit sudah dibuat, dan **sudah deploy ke VPS produksi & dikonfirmasi jalan aman** (2026-07-13).
-- **Known limitation / catatan:** nominal otomatis mengandalkan mapping harga hardcoded (`TransaksiService::PAKET_PRICES`) karena belum ada tabel harga backend — kalau harga di landing page berubah, mapping ini harus di-update manual juga. Payment gateway, QRIS, Virtual Account, multiple bukti transfer, reminder pembayaran, follow up WhatsApp otomatis, nomor referensi bank, dan refund **sengaja belum diimplementasikan** (sesuai scope requirement), tapi skema DB sudah future-proof untuk itu.
-- **Revisi 1 (sama hari, pasca-testing owner):** 2 bug fix:
-    1. CSS `admin-transaksi.css` ternyata belum punya rule generik `.modal h3` / `.modal p.sub` (modal lama/mock selalu pakai inline style, jadi gak ketahuan) — bikin modal Verifikasi Pembayaran tampil berantakan (judul & subjudul gak ke-style). Ditambahkan, disamakan dengan pola `admin-dashboard.css`.
-    2. Link CSS `admin-transaksi.css` ditambah query string versi (`?v={{ filemtime(...) }}`) di `admin/transaksi.blade.php` — cache-busting, supaya browser/Cloudflare gak nyangkut ke versi CSS lama (kemungkinan penyebab indikator titik merah gak muncul saat testing pertama).
-    - Sudah diverifikasi ulang: `markOpened()` cuma dipanggil dari `AdminTransaksiController@show`, yang cuma di-hit lewat tombol Detail (bukan pas load halaman list) — kalau titik merah masih belum muncul setelah hard refresh, kemungkinan besar transaksi yang ditest emang udah pernah dibuka sebelumnya, bukan bug.
+    - **Database:** migration `add_admin_management_fields_to_users_table` — tambah `role`, `status`, `last_login_at`, `created_by`/`updated_by` (self-referencing FK ke `users.id`, nullOnDelete), `deleted_at` (SoftDeletes). Default `role='Admin'`, `status='Aktif'`.
+    - **Model `User`:** tambah trait `SoftDeletes`, konstanta `ROLE_SUPER_ADMIN`/`ROLE_ADMIN`/`ROLE_OPTIONS`, `STATUS_ACTIVE`/`STATUS_INACTIVE`/`STATUS_OPTIONS` (pola sama `ReferralAgent::STATUS_*`), relasi `createdBy()`/`updatedBy()`.
+    - **`UserService`** (baru): `paginate()` (search nama/email + filter role/status + `latest()`), `createAdmin()`, `updateAdmin()`, `deleteAdmin()`. Business rule di-enforce di sini via method `assertCan*()` yang lempar `\RuntimeException` (controller tangkap jadi JSON 403) — bukan Gate/Policy: hanya Super Admin bisa CRUD Admin (Admin biasa cuma bisa lihat list/detail, tombol Tambah/Edit/Hapus disembunyikan di view), Super Admin tidak bisa hapus/nonaktifkan/ubah role akun sendiri, sistem selalu menjaga minimal 1 Super Admin aktif (dicek pakai `activeSuperAdminCount()` sebelum update/delete yang berpotensi menghilangkan Super Admin aktif terakhir).
+    - **`AdminUserController`** (baru): index/store/show/update/destroy, thin, delegasi penuh ke `UserService`. Route `admin.user.index/store/show/update/destroy`.
+    - **Validasi:** `StoreAdminUserRequest` (nama, email unik, password min 8 + `confirmed`, role) & `UpdateAdminUserRequest` (+ status wajib, password nullable + `confirmed`) — pola sama `StoreAdminMuridRequest`, error selalu JSON 422.
+    - **UI:** `admin/user.blade.php` + `admin/partials/user-list.blade.php` — list async (search + filter role + filter status + pagination + reload), modal Tambah/Edit (komponen sama, password opsional pas edit), modal Detail (read-only), **modal Konfirmasi Hapus custom** (bukan native `confirm()` seperti Murid/Transaksi — sengaja beda karena requirement eksplisit minta flow "Modal Konfirmasi"), toast, soft delete. Tombol Tambah/Edit/Hapus disembunyikan dari UI kalau actor bukan Super Admin (selain block server-side).
+    - **Seeder:** `DatabaseSeeder` — `Test User` sekarang otomatis `role=Super Admin, status=Aktif`, menjamin requirement "sistem selalu punya minimal 1 Super Admin".
+- **File utama yang dibuat/berubah:** migration `add_admin_management_fields_to_users_table`, `app/Models/User.php`, `app/Services/UserService.php` (baru), `app/Http/Requests/StoreAdminUserRequest.php`/`UpdateAdminUserRequest.php` (baru), `app/Http/Controllers/AdminUserController.php` (baru), `routes/web.php`, `resources/views/admin/user.blade.php` (baru), `resources/views/admin/partials/user-list.blade.php` (baru), `public/css/admin-user.css` (baru), `resources/views/layouts/admin.blade.php` (menu sidebar), `app/Http/Requests/LoginRequest.php` (cek status + set `last_login_at`), `database/seeders/DatabaseSeeder.php`, `docs/todo.md`, file ini.
+- **Dampak:** Owner (Super Admin) sekarang bisa kelola akun Admin lain dari UI (sebelumnya cuma 1 akun hasil seeder, tanpa role sama sekali). Semua user existing otomatis dapat `role=Admin, status=Aktif` dari default kolom migration (tidak ada yang ke-lock out).
+- **Belum dijalankan di lokal:** migration `add_admin_management_fields_to_users_table` — owner perlu `php artisan migrate` manual sebelum fitur ini bisa dites/dipakai (lihat §12 & §13).
+- **Known limitation / catatan:** role/permission baru scoped ke modul ini, BUKAN sistem RBAC global (route `admin.*` lain masih tanpa role gate). Permission granular per action (View/Create/Edit/Delete/Export/Verify/Approve/Reject) dan Multi Role **sengaja belum diimplementasikan** (sesuai catatan requirement "Permission detail akan dibuat pada update berikutnya") — lihat `docs/todo.md`.
 
 ### Riwayat sebelumnya
 
-- **Admin Murid** (2026-07-13, sesi sebelumnya): CRUD nyata (list+search+pagination, tambah/edit/detail modal, soft delete, export CSV) menggantikan view mock (lihat §18 Changelog untuk detail lengkap — dipindah dari sini supaya §11 hanya menyimpan fitur terakhir).
+- **Admin Transaksi (Manajemen Transaksi)** (2026-07-13): verifikasi manual pembayaran transfer bank, dashboard summary, tab filter, modal Detail/Verifikasi/Tolak, audit trail (lihat §18 Changelog untuk detail lengkap).
+- **Admin Murid** (2026-07-13): CRUD nyata (list+search+pagination, tambah/edit/detail modal, soft delete, export CSV) menggantikan view mock (lihat §18 Changelog untuk detail lengkap).
 - **Admin Referral Agent** (2026-07-13, sesi sebelumnya): UI admin + backend Referral (lihat §18 Changelog untuk detail lengkap).
 
 ---
 
 ## 12. Next Development Priority
 
-1. **Wire `AdminSettingSeeder`** ke `DatabaseSeeder::run()` supaya `wa_admin_number` ter-seed.
-2. **Keputusan status Murid** — definisikan set status lengkap (Aktif/Pending/Nonaktif/…) bersama owner sebelum bangun logika status/transisi Daftar → Aktif.
-3. **Export Murid berdasarkan filter/search** + **Restore data soft delete** (prioritas tinggi, lihat `docs/todo.md`).
-4. **Desain modul pembayaran manual** (verifikasi bulanan, reminder) — sebelum menyentuh integrasi apa pun.
-5. **Kode referral vanity string** (prioritas rendah).
+1. **Jalankan migration `add_admin_management_fields_to_users_table`** (`php artisan migrate`) — belum dijalankan di lokal, fitur Manajemen User belum bisa dites sampai ini jalan.
+2. **Wire `AdminSettingSeeder`** ke `DatabaseSeeder::run()` supaya `wa_admin_number` ter-seed.
+3. **Keputusan status Murid** — definisikan set status lengkap (Aktif/Pending/Nonaktif/…) bersama owner sebelum bangun logika status/transisi Daftar → Aktif.
+4. **Export Murid berdasarkan filter/search** + **Restore data soft delete** (prioritas tinggi, lihat `docs/todo.md`).
+5. **Manajemen User: tab Guru & tab Murid** (baru tab Admin yang selesai) + permission granular per action (lihat `docs/todo.md`).
+6. **Desain modul pembayaran manual** (verifikasi bulanan, reminder) — sebelum menyentuh integrasi apa pun.
+7. **Kode referral vanity string** (prioritas rendah).
 
 ---
 
 ## 13. Known Issues / Technical Debt
 
+- **Migration `add_admin_management_fields_to_users_table` belum dijalankan di lokal** — kolom `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` di `users` baru ada di kode, belum di DB. Jalankan `php artisan migrate` sebelum test fitur Manajemen User.
+- **Role/permission baru scoped ke modul Manajemen User Admin** — bukan sistem RBAC global. Route `admin.*` lain (Murid, Transaksi, Referral Agent, dst) masih belum ada role gate sama sekali, semua user login (Admin/Super Admin) akses penuh ke situ.
 - **`AdminSettingSeeder` belum dipanggil** dari `DatabaseSeeder::run()` → `php artisan db:seed` tidak akan mengisi `wa_admin_number`. `MuridController::store()` mengandalkan setting ini (fallback `null` jika kosong).
 - **`StorePostRequest` orphan** — ada di `app/Http/Requests`, `authorize()` return `false`, `rules()` kosong, tidak dipakai controller mana pun. Status tidak jelas → **jangan hapus / jangan bangun di atasnya** tanpa tanya.
 - **Route admin masih closure** return view statis untuk sebagian besar halaman — kecuali `admin.referral-agent.*` dan `admin.murid.*` yang sudah pakai controller nyata.
@@ -437,14 +446,17 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | `app/Http/Controllers/ReferralAgentController.php` | CRUD Referral Agent admin (index/store/update/toggleStatus)                                            |
 | `app/Http/Controllers/AdminMuridController.php` | CRUD Murid admin (index/store/show/update/destroy/export), thin — delegasi ke `MuridService`             |
 | `app/Http/Controllers/AdminTransaksiController.php` | CRUD Transaksi admin (index/show/verify/reject/updateCatatan/previewBukti/downloadBukti), thin — delegasi ke `TransaksiService` |
+| `app/Http/Controllers/AdminUserController.php` | CRUD User Admin (index/store/show/update/destroy), thin — delegasi ke `UserService`, tangkap `\RuntimeException` jadi JSON 403 (baru 2026-07-14) |
 | `app/Http/Requests/StoreMuridRequest.php`  | Validasi pendaftaran, pesan ID, error selalu JSON 422                                                        |
-| `app/Http/Requests/LoginRequest.php`       | Validasi + rate-limit + `authenticate()` login                                                               |
+| `app/Http/Requests/LoginRequest.php`       | Validasi + rate-limit + `authenticate()` login + cek status Nonaktif + set `last_login_at` (baru 2026-07-14) |
 | `app/Http/Requests/StoreReferralAgentRequest.php` / `UpdateReferralAgentRequest.php` | Validasi admin Referral Agent (email/whatsapp unik, status) |
 | `app/Http/Requests/StoreAdminMuridRequest.php` / `UpdateAdminMuridRequest.php` | Validasi admin Murid (email/whatsapp unik, normalisasi WA di `prepareForValidation()`, error selalu JSON 422) |
 | `app/Http/Requests/VerifyTransaksiRequest.php` / `UpdateTransaksiCatatanRequest.php` | Validasi verifikasi pembayaran (bukti_transfer wajib image max 2MB) & update catatan internal, error selalu JSON 422 |
+| `app/Http/Requests/StoreAdminUserRequest.php` / `UpdateAdminUserRequest.php` | Validasi admin User (email unik, password min 8 + confirmed, role/status in konstanta), error selalu JSON 422 (baru 2026-07-14) |
 | `app/Services/ReferralAgentService.php`    | Capture/resolve referral cookie, generate kode unik, buildReferralLink, createAgent, toggleStatus            |
 | `app/Services/MuridService.php`            | Business logic Murid admin: paginate+search, createMurid, updateMurid, normalizeWhatsapp, allForExport (CSV) |
 | `app/Services/TransaksiService.php`        | Business logic Transaksi: createFromMurid (auto invoice+nominal), paginate+filter, dashboardSummary, statusCounts, markOpened, verifyPayment, reject, updateCatatan, logActivity |
+| `app/Services/UserService.php`             | Business logic User Admin: paginate+search+filter role/status, createAdmin, updateAdmin, deleteAdmin, activeSuperAdminCount, guard rule assertCanCreate/Update/DeleteAdmin (lempar `\RuntimeException`) (baru 2026-07-14) |
 | `app/Http/Middleware/LogVisitor.php`       | Catat kunjungan non-admin ke `visitor_logs`                                                                  |
 | `app/Models/Murid.php`                     | Model inti + konstanta `LEVEL_OPTIONS`/`PAKET_OPTIONS`/`STATUS_DAFTAR`/`STATUS_AKTIF` (baru) + trait `SoftDeletes` + relasi `transaksi()` |
 | `app/Models/ReferralAgent.php`             | Model agen + konstanta status/STATUS_OPTIONS + relasi `murid()`                                              |
@@ -452,13 +464,16 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 | `app/Models/VisitorLog.php`                | Model log kunjungan                                                                                          |
 | `app/Models/Transaksi.php`                 | Model transaksi + konstanta STATUS/METODE/JENIS OPTIONS & LABELS, `booted()` generate invoice_number, relasi `murid()`/`verifiedBy()`/`activities()` |
 | `app/Models/TransaksiActivity.php`         | Model audit trail transaksi (readonly, `$timestamps = false`), relasi `transaksi()`/`causer()`               |
+| `app/Models/User.php`                      | Model auth + konstanta `ROLE_SUPER_ADMIN`/`ROLE_ADMIN`/`ROLE_OPTIONS`, `STATUS_ACTIVE`/`STATUS_INACTIVE`/`STATUS_OPTIONS` + trait `SoftDeletes` + relasi `createdBy()`/`updatedBy()` (baru 2026-07-14) |
 | `resources/views/pages/home.blade.php`     | Landing page + modal pendaftaran + JS `fetch(/daftar)`                                                       |
 | `resources/views/admin/referral-agent.blade.php` | List + modal tambah/edit Referral Agent                                                                |
 | `resources/views/admin/murid.blade.php`    | List + modal tambah/edit + modal detail Murid, AJAX (search/pagination/reload), toast                        |
 | `resources/views/admin/partials/murid-list.blade.php` | Partial tabel+pagination Murid, dipakai render awal & fragment AJAX                                |
 | `resources/views/admin/transaksi.blade.php` | Dashboard summary + tab filter + filter bar + tabel + modal Detail/Verifikasi Transaksi, AJAX (full rewrite dari mock, 2026-07-13) |
 | `resources/views/admin/partials/transaksi-list.blade.php` | Partial tabel+pagination Transaksi + indikator "belum dibuka", dipakai render awal & fragment AJAX  |
-| `resources/views/layouts/admin.blade.php`  | Shell admin + form logout tersentralisasi + menu Referral Agent/Murid + meta `csrf-token` (baru 2026-07-13)  |
+| `resources/views/admin/user.blade.php`     | Manajemen User — fokus tab Admin saja (nav sub-tab Guru/Murid sempat ditambah lalu dihapus lagi atas permintaan owner 2026-07-14, Guru/Murid tetap di `docs/todo.md`), filter bar (search/role/status), tabel + modal Tambah/Edit/Detail/Konfirmasi Hapus, AJAX |
+| `resources/views/admin/partials/user-list.blade.php` | Partial tabel+pagination User Admin, tombol Edit/Hapus disembunyikan kalau actor bukan Super Admin (baru 2026-07-14) |
+| `resources/views/layouts/admin.blade.php`  | Shell admin + form logout tersentralisasi + menu Referral Agent/Murid/**Manajemen User** + meta `csrf-token` (menu User baru 2026-07-14)  |
 | `resources/views/layouts/app.blade.php`    | Shell publik + script cleanup URL `?share_via=`                                                              |
 | `database/seeders/AdminSettingSeeder.php`  | Seed `wa_admin_number` (belum di-wire)                                                                       |
 | `CLAUDE.md`                                | Instruksi wajib AI — jangan diedit tanpa diminta                                                             |
@@ -525,6 +540,7 @@ npm install && npm run build
 
 | Tanggal    | Fitur                     | Ringkasan                                                                                                                      | Dampak                                                                   |
 | ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| 2026-07-14 | Manajemen User — tab Admin (CRUD nyata, AJAX) | Modul baru CRUD akun Admin/Super Admin (fokus HANYA tab Admin, tab Guru/Murid masuk todo). Tabel `users` dapat kolom baru `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` (migration `add_admin_management_fields_to_users_table`). Role & status pakai konstanta (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`, `STATUS_ACTIVE`/`STATUS_INACTIVE`), bukan hardcode string. List (search nama/email + filter role + filter status + pagination + sort terbaru + reload async), tambah/edit via modal (password opsional saat edit + `confirmed`), soft delete via **modal konfirmasi custom** (beda dari native `confirm()` di Murid/Transaksi — requirement eksplisit minta flow ini). Business rule di `UserService` (bukan Gate/Policy global, scoped ke modul ini saja — dikonfirmasi owner krn sebelumnya role/permission system statusnya "keputusan tertunda"): hanya Super Admin bisa CRUD Admin, Super Admin tidak bisa hapus/nonaktifkan/ubah role akun sendiri, sistem selalu menjaga minimal 1 Super Admin aktif. Tambahan di luar requirement awal (didokumentasikan transparan): login diblokir kalau `status` Nonaktif, `last_login_at` di-update otomatis tiap login sukses. Seeder `Test User` otomatis jadi Super Admin aktif. File baru: `UserService`, `AdminUserController`, `StoreAdminUserRequest`/`UpdateAdminUserRequest`, `admin/user.blade.php`, `admin/partials/user-list.blade.php`, `admin-user.css`. | Owner (Super Admin) bisa kelola akun Admin lain dari UI — sebelumnya cuma 1 akun seeder tanpa role sama sekali. **Migration belum dijalankan di lokal** — perlu `php artisan migrate` manual sebelum dites. |
 | 2026-07-13 | Admin Transaksi (Manajemen Transaksi) | Modul baru verifikasi manual pembayaran (transfer bank), menggantikan view mock `admin/transaksi.blade.php`. Tabel baru `transaksi` + `transaksi_activities` (audit trail), skema future-proof utk payment gateway (`gateway_provider`/`gateway_transaction_id`/`gateway_payload`, belum dipakai). Invoice auto-generate `INV-00000001` dari id. Transaksi auto-dibuat saat pendaftaran publik (`TransaksiService::createFromMurid()`, nominal dari mapping harga paket landing page, dikonfirmasi owner). Dashboard summary 4 kartu + tab filter status + filter bar (search/paket/metode/tanggal), indikator transaksi belum dibuka (`opened_at`), modal Detail (info murid+transaksi, catatan internal editable, bukti transfer preview/lihat/download, histori aktivitas), modal Verifikasi (upload bukti wajib + catatan opsional → status Berhasil + murid auto jadi `Murid::STATUS_AKTIF` baru, dikonfirmasi owner), aksi Tolak (tambahan di luar requirement awal, supaya tab "Ditolak" bisa tercapai). Bukti transfer disimpan disk `local` privat, nama file UUID. File baru: `Transaksi`, `TransaksiActivity`, `TransaksiService`, `AdminTransaksiController`, `VerifyTransaksiRequest`/`UpdateTransaksiCatatanRequest`, `admin/partials/transaksi-list.blade.php`. Route `admin.transaksi` (closure) → `admin.transaksi.index` (RESTful + sub-routes), sidebar & section-tabs disesuaikan. Auto-create transaksi utk murid tambah manual admin masuk `docs/todo.md` (belum di fase ini). | Admin bisa verifikasi pembayaran transfer manual nyata dari dashboard (sebelumnya mock dummy). Migration `create_transaksi_table` & `create_transaksi_activities_table` **sudah dijalankan** owner — testing fungsional masih menyusul. Murid punya status baru `Aktif`. Route name lama `admin.transaksi` (closure mock) tidak ada lagi. |
 | 2026-07-13 | Admin Murid (CRUD nyata, AJAX) | Modul admin Murid diubah dari view mock jadi CRUD fungsional: list (pagination+search server-side+total+empty state, eager load referralAgent), tambah/edit via modal (status otomatis Daftar, referral kosong, normalisasi WA identik publik, unsaved-changes confirm), detail via modal (fetch JSON, style Referral Agent), soft delete (`SoftDeletes` + migration baru) + toast + reload async, export CSV seluruh data (tombol disabled kalau kosong). Controller/Service/Request baru: `AdminMuridController`, `MuridService`, `StoreAdminMuridRequest`/`UpdateAdminMuridRequest`. Route `admin.murid` (closure) → `admin.murid.index` (RESTful), sidebar & section-tabs disesuaikan. Tambah meta `csrf-token` di layout admin. | Owner sekarang bisa kelola data murid nyata dari admin (sebelumnya cuma dummy). **Migration `add_soft_deletes_to_murid_table` perlu `php artisan migrate` manual** sebelum modul ini jalan. Route name lama `admin.murid` (closure mock) tidak ada lagi, diganti `admin.murid.index`. |
 | 2026-07-13 | docs: SOP Wrap-up Workflow | Tambah `docs/workflow-wrapup.md` — SOP wajib proses wrap-up (analisis perubahan, update dokumentasi, pembagian commit per Logical Change, format laporan baku). Dirujuk dari §16 | Proses wrap-up ke depan lebih terstandar & konsisten; tidak mengubah kode/fitur apa pun |
@@ -545,7 +561,8 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 **Jangan dilakukan:**
 
 - Jangan bangun **auto-billing/auto-charge** — pembayaran manual bulanan.
-- Jangan tambah **Repository pattern**, jangan pilih **role/permission system** (Spatie vs custom) — keduanya keputusan tertunda.
+- Jangan tambah **Repository pattern**.
+- **Role/permission system**: sudah **resolved sebagian** (2026-07-14) — dipilih custom constant (`User::ROLE_*`), scoped ke modul Manajemen User Admin saja. Jangan perluas jadi Gate/Policy/middleware global tanpa konfirmasi owner dulu (permission granular per action & Multi Role masih di `docs/todo.md`, sengaja belum dikerjakan).
 - Jangan **refactor logika controller ke Service secara spekulatif** (mis. `normalizeWhatsapp`) tanpa diminta.
 - Jangan **rename** method/route/model/kolom/tabel tanpa izin.
 - Jangan **ubah schema** `murid`/`admin_settings`/`visitor_logs`/`referral_agents`/`users` tanpa diminta.
@@ -580,16 +597,16 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 5. Arsitektur: Route → Controller → Service → Model. **No Repository**.
 6. Hanya ada 1 Service: `ReferralAgentService`. Normalisasi WA masih di controller (belum dipindah, dibiarkan).
 7. Validasi selalu via Form Request; controller tipis.
-8. Tabel inti: `murid` (singular), `referral_agents`, `admin_settings`, `visitor_logs`, `users`.
+8. Tabel inti: `murid` (singular), `referral_agents`, `admin_settings`, `visitor_logs`, `users` (dapat kolom `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` sejak 2026-07-14).
 9. `Murid` status baru selalu `'Daftar'`. Status `'Aktif'` (baru, 2026-07-13) auto-diset saat transaksi pembayaran diverifikasi berhasil — status lain (Pending/Nonaktif/dst) masih belum ada.
 10. Level: Hijaiyah/Iqra/Tahsin/Tajwid/Hafalan. Paket: Basic/Pro/Premium/Platinum.
 11. Harga paket hanya teks di frontend, **tidak ada di DB**.
 12. Nomor WA disimpan format `62xxxx`; dinormalisasi saat store.
 13. Pendaftaran publik `POST /daftar` → validasi → simpan → **JSON** (bukan redirect), throttle 10/menit.
 14. Referral: `?share_via=KODE` (param URL, konstanta `ReferralAgentService::QUERY_PARAM`) → cookie 30 hari → auto-resolve `referral_agent_id` saat daftar. Capture jalan di `/` & `/daftar`. **UI admin sudah ada** (`admin/referral-agent`, sejak 2026-07-13).
-15. Auth: built-in Laravel session (**bukan Breeze**), login rate-limit 5/menit, redirect ke `admin.dashboard`.
-16. Semua route `admin.*` dilindungi middleware `auth`; guest → login. **Tidak ada role/permission**.
-17. Halaman admin (dashboard, guru, jadwal, paket, laporan, pengaturan) masih **view mock statis** — kecuali Referral Agent, Murid, dan **Transaksi** (semua sejak 2026-07-13) yang sudah pakai controller nyata.
+15. Auth: built-in Laravel session (**bukan Breeze**), login rate-limit 5/menit, redirect ke `admin.dashboard`. Login diblokir kalau akun `status` Nonaktif (baru 2026-07-14), `last_login_at` ke-update tiap login sukses.
+16. Semua route `admin.*` dilindungi middleware `auth`; guest → login. **Role/permission baru scoped ke modul Manajemen User Admin** (`UserService`, sejak 2026-07-14) — route admin lain masih tanpa role gate/Gate/Policy global.
+17. Halaman admin (dashboard, guru, jadwal, paket, laporan, pengaturan) masih **view mock statis** — kecuali Referral Agent, Murid, Transaksi (sejak 2026-07-13), dan **Manajemen User — tab Admin** (sejak 2026-07-14) yang sudah pakai controller nyata.
 18. Logout tersentralisasi di `layouts/admin.blade.php` (sebelumnya mock, sudah diperbaiki 2026-07-13).
 19. `LogVisitor` mencatat kunjungan GET non-admin ke `visitor_logs` (dedup tanggal+path+IP, increment hit).
 20. Settings global = key-value `admin_settings`, akses `AdminSetting::get()`. `wa_admin_number` dipakai di response pendaftaran.
@@ -601,13 +618,13 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 26. Git: branch-per-fitur, Conventional Commits bahasa Indonesia (`feat(scope):`).
 27. App di belakang Cloudflare (`trustProxies`). Health check `/up` aktif.
 28. Session/cache/queue driver = `database`; timezone `Asia/Jakarta`; locale `en`.
-29. Keputusan tertunda: set status Murid lengkap (Pending/Nonaktif/dst, di luar Daftar/Aktif yang sudah ada), role/permission system, delivery Zoom, auto-create transaksi utk murid tambah manual admin.
-30. Prioritas berikutnya: wire seeder `AdminSettingSeeder` → export by filter & restore soft delete → integrasi payment gateway (opsional, tunggu keputusan owner).
+29. Keputusan tertunda **sisa**: set status Murid lengkap (Pending/Nonaktif/dst, di luar Daftar/Aktif yang sudah ada), delivery Zoom, auto-create transaksi utk murid tambah manual admin. Role/permission system **sudah resolved sebagian** (2026-07-14): custom constant scoped ke Manajemen User Admin — perluasan jadi RBAC global/permission granular per action/Multi Role masih tertunda (`docs/todo.md`).
+30. Prioritas berikutnya: jalankan migration `add_admin_management_fields_to_users_table` → wire seeder `AdminSettingSeeder` → export by filter & restore soft delete → tab Guru/Murid di Manajemen User → integrasi payment gateway (opsional, tunggu keputusan owner).
 31. SSOT dokumentasi = file ini; kalau konflik, **kode menang**, lalu perbarui file ini.
-32. Guardrail utama: no rename, no schema change tanpa izin, no terjemah istilah domain, no refactor spekulatif, no auto-billing.
+32. Guardrail utama: no rename, no schema change tanpa izin, no terjemah istilah domain, no refactor spekulatif, no auto-billing, no RBAC global tanpa konfirmasi owner (role/permission masih scoped ke Manajemen User Admin saja).
 33. Owner = solo dev, komunikasi santai-akrab tapi profesional; kirim hanya file terdampak saat revisi.
-34. Fitur terakhir selesai: Admin Transaksi (Manajemen Transaksi) — CRUD verifikasi pembayaran nyata (dashboard summary, tab filter, filter bar, indikator transaksi baru, modal Detail + Verifikasi + Tolak, audit trail) (2026-07-13). Migration dijalankan, testing lokal oke, **sudah commit & deploy ke VPS produksi, dikonfirmasi jalan aman**.
-35. Tabel baru: `transaksi` (invoice auto-generate, nominal dari mapping harga paket, future-proof utk payment gateway) & `transaksi_activities` (audit trail readonly). Murid dapat status baru `Aktif` (auto-set saat verifikasi berhasil).
+34. Fitur terakhir selesai: **Manajemen User — tab Admin** (CRUD nyata akun Admin/Super Admin, business rule role-scoped di `UserService`, minimal 1 Super Admin aktif dijaga sistem) (2026-07-14). **Migration belum dijalankan di lokal** — perlu `php artisan migrate` manual sebelum dites.
+35. Tabel baru/berubah: `transaksi` & `transaksi_activities` (2026-07-13, invoice auto-generate, nominal dari mapping harga paket, future-proof utk payment gateway). `users` dapat kolom baru `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` (2026-07-14). Murid dapat status baru `Aktif` (auto-set saat verifikasi berhasil).
 
 ## Server Specs
 

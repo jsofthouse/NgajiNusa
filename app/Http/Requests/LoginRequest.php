@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -48,6 +49,18 @@ class LoginRequest extends FormRequest
                 'email' => trans('auth.failed'),
             ]);
         }
+
+        // Akun Nonaktif tidak boleh masuk — konsekuensi langsung dari fitur
+        // Manajemen User Admin (kolom status). Ditambahkan 2026-07-14.
+        if (Auth::user()->status !== User::STATUS_ACTIVE) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun Anda tidak aktif. Hubungi Super Admin.',
+            ]);
+        }
+
+        Auth::user()->update(['last_login_at' => now()]);
 
         RateLimiter::clear($this->throttleKey());
     }

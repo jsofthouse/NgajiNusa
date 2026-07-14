@@ -17,9 +17,12 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Selalu pastikan minimal 1 akun Super Admin aktif (requirement Manajemen User Admin).
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'role' => User::ROLE_SUPER_ADMIN,
+            'status' => User::STATUS_ACTIVE,
         ]);
     }
 }

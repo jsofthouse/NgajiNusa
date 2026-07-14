@@ -4,6 +4,10 @@
 
 - [ ] Admin Murid: Export berdasarkan filter/search (saat ini `AdminMuridController@export` selalu export seluruh data, tanpa memperhatikan search yang aktif di list).
 - [ ] Admin Murid: Restore data Soft Delete (halaman Trash + tombol Restore — saat ini cuma soft delete, belum ada cara balikin data yang terhapus).
+- [ ] Manajemen User: tab Guru (kelola akun login Guru — beda dari data Guru di menu terpisah).
+- [ ] Manajemen User: tab Murid (kelola akun login Murid/wali, kalau nanti dibutuhkan).
+- [ ] Manajemen User: Role & Permission granular per menu + per action (View/Create/Edit/Delete/Export/Verify/Approve/Reject) — saat ini baru role-level check kasar (Super Admin vs Admin) di `UserService`, "Permission detail" sesuai requirement awal.
+- [ ] Manajemen User: dukungan Multi Role (1 user bisa punya lebih dari 1 role) — saat ini 1 user = 1 role (`role` kolom string tunggal).
 
 ## Prioritas Menengah
 
@@ -21,6 +25,13 @@
 - [ ] Admin Murid: Tombol WhatsApp langsung dari modal Detail Murid.
 - [ ] Admin Murid: Workflow perubahan status Daftar → Aktif setelah pembayaran manual (butuh keputusan owner soal set status Murid lengkap dulu).
 - [ ] Referral System: izinkan admin mengubah kode referral jadi custom "vanity string" (saat ini auto-generate acak huruf+angka lewat `ReferralAgentService::generateUniqueCode()`).
+- [ ] Manajemen User: Reset Password oleh Super Admin (tanpa perlu tahu password lama admin lain).
+- [ ] Manajemen User: Audit Log User (siapa mengubah apa, kapan — mirip `transaksi_activities`).
+- [ ] Manajemen User: Login History (riwayat login per akun, bukan cuma `last_login_at` terakhir).
+- [ ] Manajemen User: Force Logout User (invalidate session user lain dari admin).
+- [ ] Manajemen User: Avatar Admin (upload foto profil).
+- [ ] Manajemen User: Two Factor Authentication.
+- [ ] Manajemen User: Invite Admin via Email (undangan set password sendiri, bukan Super Admin yang set password awal).
 
 ## Opsional (menunggu keputusan client — JANGAN diimplementasikan sekarang)
 
@@ -34,6 +45,10 @@
 ## Bug / Tech Debt
 
 - [ ] `database/seeders/AdminSettingSeeder.php` (isi `wa_admin_number`) belum dipanggil dari `DatabaseSeeder::run()` — tidak akan jalan lewat `php artisan db:seed` sampai ditambahkan.
+
+## Selesai (2026-07-14)
+
+- [x] Manajemen User — tab Admin: CRUD nyata akun Admin/Super Admin menggantikan halaman yang belum ada sama sekali. List (search nama/email + filter role + filter status + pagination + sort terbaru + reload async), tambah/edit via modal (password opsional saat edit, konfirmasi password, validasi unik email, min 8 karakter), soft delete via modal konfirmasi + toast + reload async. Role & status pakai konstanta (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`, `User::STATUS_ACTIVE`/`STATUS_INACTIVE`), bukan hardcode string. Business rule (dicek di `UserService`): hanya Super Admin bisa CRUD Admin (Admin biasa read-only di halaman ini), Super Admin tidak bisa hapus/nonaktifkan/ubah role akun sendiri, sistem selalu menjaga minimal 1 Super Admin aktif. Tabel `users` dapat kolom baru: `role`, `status`, `last_login_at`, `created_by`, `updated_by`, `deleted_at` (SoftDeletes). Seeder `Test User` sekarang otomatis jadi Super Admin aktif. Tambahan di luar requirement awal (didokumentasikan transparan, dikonfirmasi lewat pertanyaan ke owner sebelum implementasi): login diblokir kalau akun Status Nonaktif, `last_login_at` ke-update otomatis tiap login sukses. File baru: `UserService`, `AdminUserController`, `StoreAdminUserRequest`/`UpdateAdminUserRequest`, `admin/user.blade.php`, `admin/partials/user-list.blade.php`, `admin-user.css`, migration `add_admin_management_fields_to_users_table`. File diubah: `User` model (SoftDeletes + konstanta + relasi createdBy/updatedBy), `routes/web.php` (`admin.user.*`), `layouts/admin.blade.php` (menu sidebar), `LoginRequest` (cek status + set last_login_at), `DatabaseSeeder`. Tab Guru & Murid di halaman ini sengaja belum dikerjakan (lihat Prioritas Tinggi), begitu juga permission granular per action (lihat Prioritas Tinggi/Rendah).
 
 ## Selesai (2026-07-13)
 
