@@ -147,7 +147,7 @@
                         <li><i class="fas fa-check"></i> Laporan progres</li>
                         <li><i class="fas fa-check"></i> Link Zoom otomatis</li>
                     </ul>
-                    <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
+                    <a href="#" class="btn-primary" onclick="openRegister('Basic')">Pilih Paket</a>
                 </div>
 
                 <!-- Paket 2 (Popular) -->
@@ -164,7 +164,7 @@
                         <li><i class="fas fa-check"></i> Notifikasi WA</li>
                         <li><i class="fas fa-check"></i> Sertifikat level</li>
                     </ul>
-                    <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
+                    <a href="#" class="btn-primary" onclick="openRegister('Pro')">Pilih Paket</a>
                 </div>
 
                 <!-- Paket 3 -->
@@ -180,7 +180,7 @@
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
                     </ul>
-                    <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
+                    <a href="#" class="btn-primary" onclick="openRegister('Premium')">Pilih Paket</a>
                 </div>
 
                 <!-- Paket 4 -->
@@ -196,7 +196,7 @@
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
                     </ul>
-                    <a href="#" class="btn-primary" onclick="openRegister()">Pilih Paket</a>
+                    <a href="#" class="btn-primary" onclick="openRegister('Platinum')">Pilih Paket</a>
                 </div>
             </div>
         </div>
@@ -501,13 +501,18 @@
         });
 
         // ===== MODAL =====
-        function openRegister() {
+        function openRegister(selectedPackage = null) {
             document.getElementById('registerModal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
             // Reset form
             document.getElementById('registerForm').style.display = 'block';
             document.getElementById('registerSuccess').style.display = 'none';
             document.getElementById('registerForm').reset();
+
+            // Auto-select paket kalau dipanggil dari tombol "Pilih Paket" di card
+            if (selectedPackage) {
+                document.getElementById('regPackage').value = selectedPackage;
+            }
         }
 
         function closeRegister() {
