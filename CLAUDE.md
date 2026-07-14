@@ -149,6 +149,16 @@ Keep documentation concise and accurate.
 
 ---
 
+# Workflows
+
+Seluruh workflow resmi project ada di `docs/workflow.md` (index) beserta file `workflow-*.md` terkait yang didaftarkan di dalamnya.
+
+Setiap kali perintah owner cocok dengan salah satu workflow terdaftar, jalankan workflow tersebut secara otomatis sesuai SOP di file workflow-nya masing-masing — tanpa owner perlu menjelaskan ulang langkah-langkahnya.
+
+Jangan menyalin isi SOP workflow ke file ini. Rujuk `docs/workflow.md` untuk daftar lengkap dan cara menentukan workflow yang tepat.
+
+---
+
 # SYSTEM PREFERENCES
 
 - Mode: Caveman Full active by default on all responses.

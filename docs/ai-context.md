@@ -519,6 +519,8 @@ npm install && npm run build
 
 **Debugging:** `APP_DEBUG=true` lokal; log via `laravel/pail` (`php artisan pail`); mail driver `log`.
 
+**Workflow resmi project:** seluruh workflow (termasuk wrap-up) terindeks di `docs/workflow.md`, dengan SOP rinci masing-masing di file `workflow-*.md` terkait (saat ini baru `docs/workflow-wrapup.md` yang aktif). AI assistant wajib mengenali konteks perintah owner dan menjalankan workflow yang sesuai secara otomatis, tanpa owner perlu menjelaskan ulang langkahnya — lihat `docs/workflow.md` §4 untuk cara penentuannya.
+
 **Wrap-up tiap fitur selesai:** ikuti SOP di `docs/workflow-wrapup.md` (analisis perubahan, update dokumentasi terdampak, timestamp presisi detik, pembagian commit per Logical Change, format Conventional Commit, identifikasi manual task, format laporan baku). Kirim hanya file yang berubah (aturan owner). Jika revisi minor 1 file, cukup tampilkan potongan script yang diubah — tidak perlu zip ulang.
 
 ---
@@ -528,7 +530,7 @@ npm install && npm run build
 1. **Kode nyata** — sumber kebenaran tertinggi. Jika dokumen ≠ kode, kode menang, lalu perbarui dokumen.
 2. **`docs/ai-context.md`** (file ini) — SSOT dokumentasi. Menang atas semua `docs/*.md` lain & `CLAUDE.md` untuk deskripsi kondisi project.
 3. **`CLAUDE.md`** — aturan & guardrail untuk AI (arsitektur, output rules). Menang untuk "aturan main", bukan untuk "kondisi project". Jangan diedit tanpa diminta.
-4. **`docs/workflow-wrapup.md`** — SOP operasional proses wrap-up (rincian dari poin "Wrap-up tiap fitur selesai" di §16). Menang untuk *cara eksekusi* wrap-up.
+4. **`docs/workflow.md`** — index seluruh workflow resmi project (termasuk `docs/workflow-wrapup.md` — SOP operasional proses wrap-up, rincian dari poin "Wrap-up tiap fitur selesai" di §16). Menang untuk *cara eksekusi* tiap workflow yang terdaftar di dalamnya.
 5. **`PROJECT_MEMORY.md`** — audit AI lama; sebagian sudah usang (mis. klaim Breeze, klaim SQLite lokal, klaim "Role Management done"). Jangan dijadikan acuan status; jangan ditimpa.
 6. **`docs/*.md` legacy** (`architecture, conventions, coding_style, database, decisions, deployment, features, current_state, changelog, ai_workflow, todo`) — ringkas/aspiratif, beberapa stale. Rujuk hanya bila selaras dengan file ini.
 
