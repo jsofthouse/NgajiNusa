@@ -157,11 +157,11 @@
                     <div class="price">Rp 300K <span>/ bulan</span></div>
                     <div class="sub">4 sesi per bulan</div>
                     <ul>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> 4x pertemuan 60 menit</li>
                         <li><i class="fas fa-check"></i> Guru bersertifikat</li>
                         <li><i class="fas fa-check"></i> Laporan progres</li>
                         <li><i class="fas fa-check"></i> Link Zoom otomatis</li>
-                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
@@ -175,13 +175,13 @@
                     <div class="price">Rp 550K <span>/ bulan</span></div>
                     <div class="sub">8 sesi per bulan</div>
                     <ul>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> 8x pertemuan 60 menit</li>
                         <li><i class="fas fa-check"></i> Guru senior bersertifikat</li>
                         <li><i class="fas fa-check"></i> Laporan progres detail</li>
                         <li><i class="fas fa-check"></i> Jadwal fleksibel</li>
                         <li><i class="fas fa-check"></i> Notifikasi WA</li>
                         <li><i class="fas fa-check"></i> Sertifikat level</li>
-                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
@@ -194,13 +194,13 @@
                     <div class="price">Rp 800K <span>/ bulan</span></div>
                     <div class="sub">12 sesi + konsultasi</div>
                     <ul>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> 12x pertemuan 60 menit</li>
                         <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid)</li>
                         <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
-                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
@@ -213,13 +213,13 @@
                     <div class="price">Rp 1,2jt <span>/ bulan</span></div>
                     <div class="sub">20 sesi + konsultasi</div>
                     <ul>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> 20x pertemuan 60 menit</li>
                         <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid)</li>
                         <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
-                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
