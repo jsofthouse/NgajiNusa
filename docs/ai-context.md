@@ -26,7 +26,7 @@
 **Istilah domain (bahasa Indonesia dipakai konsisten di kode, DB, dan UI — jangan diterjemahkan):**
 
 - **Murid** = calon/peserta yang mendaftar ngaji online. Bukan konsep karyawan/payroll.
-- **Paket** = paket langganan belajar (Basic, Pro, Premium, Platinum).
+- **Paket** = paket langganan belajar (Group, Basic, Pro, Premium, Platinum).
 - **Level belajar** = tingkat materi (Hijaiyah, Iqra, Tahsin, Tajwid, Hafalan).
 - **Referral Agent** = agen yang punya kode referral; murid yang daftar via `?share_via=KODE` diasosiasikan ke agen tsebut.
 - **Guru** = pengajar (baru ada view mock, belum ada model/tabel).
@@ -217,7 +217,7 @@ Index: `status`, `email`. Fillable termasuk semua kolom di atas + `referral_agen
 | murid_id | bigint FK | → `murid.id`, `cascadeOnDelete()` |
 | jenis | string(30) | Default `pendaftaran_baru` (satu-satunya dipakai fase ini). `perpanjangan`/`upgrade_paket` disiapkan sbg dokumentasi, **belum diimplementasikan** |
 | paket | string(50) | Snapshot nama paket saat transaksi dibuat (independen dari `murid.paket` kalau berubah nanti) |
-| nominal | unsignedBigInteger | Rupiah tanpa desimal. Diisi otomatis dari mapping harga di `TransaksiService::PAKET_PRICES` (Basic 300rb/Pro 550rb/Premium 800rb/Platinum 1,2jt — sesuai landing page, dikonfirmasi owner 2026-07-13 karena belum ada tabel harga backend) |
+| nominal | unsignedBigInteger | Rupiah tanpa desimal. Diisi otomatis dari mapping harga di `TransaksiService::PAKET_PRICES` (Group 150rb/Basic 300rb/Pro 550rb/Premium 800rb/Platinum 1,2jt — sesuai landing page, dikonfirmasi owner 2026-07-13, Group ditambah 2026-07-15 karena belum ada tabel harga backend) |
 | metode_pembayaran | string(30) | Default `transfer_manual` (satu-satunya dipakai fase ini). `midtrans`/`xendit`/`qris` disiapkan sbg dokumentasi, **belum diimplementasikan** |
 | status | string(30) | `menunggu_pembayaran` (default) / `menunggu_verifikasi` / `berhasil` / `ditolak` |
 | bukti_original_filename, bukti_stored_filename, bukti_mime_type, bukti_file_size, bukti_path | nullable | Metadata bukti transfer, diisi saat verifikasi. File fisik disimpan di disk `local` (`storage/app/private/payment-proofs/{tahun}/{bulan}/{uuid}.{ext}`), nama file UUID (bukan nama murid/invoice) |
@@ -241,7 +241,7 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 ### Enum / konstanta penting (di Model, bukan DB enum)
 
 - `Murid::LEVEL_OPTIONS` = `['Hijaiyah', 'Iqra', 'Tahsin', 'Tajwid', 'Hafalan']`
-- `Murid::PAKET_OPTIONS` = `['Basic', 'Pro', 'Premium', 'Platinum']`
+- `Murid::PAKET_OPTIONS` = `['Group', 'Basic', 'Pro', 'Premium', 'Platinum']` (Group ditambah 2026-07-15 — paket kelas kecil, bukan privat, maks 8 murid)
 - `Murid::STATUS_DAFTAR` = `'Daftar'`, `Murid::STATUS_AKTIF` = `'Aktif'` (ditambah 2026-07-13 bersamaan modul Transaksi, dikonfirmasi owner — auto-set saat `TransaksiService::verifyPayment()` berhasil). Status lain (Pending, Nonaktif, dst) masih **belum ada** → jangan mengarang nilai status baru tanpa konfirmasi owner.
 - `ReferralAgent::STATUS_ACTIVE` = `'Aktif'`, `ReferralAgent::STATUS_INACTIVE` = `'Nonaktif'`, `ReferralAgent::STATUS_OPTIONS` = `[STATUS_ACTIVE, STATUS_INACTIVE]` (dipakai ulang di Form Request).
 
@@ -258,7 +258,7 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 - `admin_settings.key` unik.
 - `transaksi.murid_id` cascade delete (transaksi ikut terhapus kalau murid dihapus permanen — soft delete murid tidak memicu ini). `transaksi.invoice_number` unik (nullable sesaat sebelum di-generate).
 
-> **Harga paket TIDAK ada di DB/backend.** Angka harga (Basic Rp300K/4 sesi, Pro Rp550K/8 sesi, Premium Rp800K/12 sesi, Platinum Rp1,2jt/20 sesi) hanya **teks di `pages/home.blade.php`**. Tidak ada tabel `pakets`/pricing. Jangan anggap ini otoritatif backend.
+> **Harga paket TIDAK ada di DB/backend.** Angka harga (Group Rp150K/8 sesi maks 8 murid, Basic Rp300K/4 sesi, Pro Rp550K/8 sesi, Premium Rp800K/12 sesi, Platinum Rp1,2jt/20 sesi) hanya **teks di `pages/home.blade.php`**, sinkron dengan `TransaksiService::PAKET_PRICES`. Tidak ada tabel `pakets`/pricing. Jangan anggap ini otoritatif backend.
 
 ---
 
@@ -377,15 +377,16 @@ Plus tabel default framework: `cache`, `cache_locks`, `jobs`, `job_batches`, `fa
 
 ## 11. Last Completed Feature
 
-- **Nama fitur:** Auto-select Paket di Modal Pendaftaran (Landing Page) — klik tombol "Pilih Paket" di card pricing langsung buka modal pendaftaran dengan field Paket otomatis terisi sesuai paket yang diklik, user tidak perlu pilih ulang.
-- **Tanggal:** 2026-07-14.
-- **Perubahan utama:** `openRegister()` di `pages/home.blade.php` diberi parameter opsional `openRegister(selectedPackage = null)`. Setelah `registerForm.reset()`, kalau `selectedPackage` terisi, langsung set `document.getElementById('regPackage').value = selectedPackage`. 4 tombol "Pilih Paket" di section Paket (Basic/Pro/Premium/Platinum) sekarang memanggil `openRegister('Basic')`, `openRegister('Pro')`, `openRegister('Premium')`, `openRegister('Platinum')`. Tombol Daftar lain (navbar, hero, CTA) tetap `openRegister()` tanpa argumen — behavior lama (paket belum dipilih, default select tetap Pro) tidak berubah.
-- **File utama yang diubah:** `resources/views/pages/home.blade.php` (satu file, JS inline + 4 atribut `onclick`).
-- **Dampak:** UX flow pendaftaran lebih singkat dari card paket. Paket tetap bisa diganti manual di modal sebelum submit. **Tidak ada** perubahan endpoint `/daftar`, validasi, atau skema database.
+- **Nama fitur:** Revisi Landing Page Paket Pengajian — paket baru "Group" (Rp150K/bulan, maks 8 murid, 8 sesi) + benefit baru di paket privat + update title/meta landing page.
+- **Tanggal:** 2026-07-15.
+- **Perubahan utama:** Paket "Group" ditambahkan sebagai paket pertama (urutan: Group, Basic, Pro, Premium, Platinum) — masuk `Murid::PAKET_OPTIONS` (otomatis berlaku di validasi publik/admin & dropdown admin yang loop dari konstanta) dan `TransaksiService::PAKET_PRICES` (nominal transaksi otomatis benar). Landing page (`pages/home.blade.php`): card Group ditambah sebelum Basic di section Paket, opsi Group ditambah di dropdown modal pendaftaran (`#regPackage`), tombol "Pilih Paket" Group memanggil `openRegister('Group')`. Benefit baru ("Privat 1 Murid 1 Guru", "Garansi Ganti Guru Tanpa Biaya", "Materi Disesuaikan dengan Level & Tujuan Murid") ditambahkan ke 4 paket privat (Basic/Pro/Premium/Platinum) — Group dikecualikan karena bukan privat. Title tag & meta description landing page diperbarui di `layouts/app.blade.php` (bukan `@section('title')` di home.blade.php — itu dead code, gak pernah di-`@yield`).
+- **File utama yang diubah:** `app/Models/Murid.php`, `app/Services/TransaksiService.php`, `resources/views/pages/home.blade.php`, `resources/views/layouts/app.blade.php`.
+- **Dampak:** UX pendaftaran dapat opsi paket kelas kecil lebih murah. Tidak ada perubahan skema DB, service/controller flow, payment, referral, atau membership.
 - **Known limitation:** Tidak ada.
 
 ### Riwayat sebelumnya
 
+- **Auto-select Paket di Modal Pendaftaran** (2026-07-14): klik "Pilih Paket" di card pricing langsung buka modal dengan field Paket otomatis terisi (lihat §18 Changelog untuk detail lengkap).
 - **Manajemen User — tab Admin** (2026-07-14, sesi sebelumnya): CRUD nyata akun Admin/Super Admin (fokus HANYA tab Admin), migration `add_admin_management_fields_to_users_table` **belum dijalankan di lokal** (lihat §18 Changelog untuk detail lengkap).
 - **Admin Transaksi (Manajemen Transaksi)** (2026-07-13): verifikasi manual pembayaran transfer bank, dashboard summary, tab filter, modal Detail/Verifikasi/Tolak, audit trail (lihat §18 Changelog untuk detail lengkap).
 - **Admin Murid** (2026-07-13): CRUD nyata (list+search+pagination, tambah/edit/detail modal, soft delete, export CSV) menggantikan view mock (lihat §18 Changelog untuk detail lengkap).
@@ -531,6 +532,7 @@ npm install && npm run build
 
 | Tanggal    | Fitur                     | Ringkasan                                                                                                                      | Dampak                                                                   |
 | ---------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| 2026-07-15 | Revisi Landing Page Paket Pengajian (paket Group) | Paket baru "Group" (Rp150K/bulan, maks 8 murid, 8x pertemuan 60 menit, guru bersertifikat, laporan progres, link Zoom otomatis) ditambahkan sebagai paket pertama — masuk `Murid::PAKET_OPTIONS` & `TransaksiService::PAKET_PRICES`. Landing page: card Group di section Paket, opsi Group di dropdown modal pendaftaran, tombol "Pilih Paket" Group → `openRegister('Group')`. Benefit baru ("Privat 1 Murid 1 Guru", "Garansi Ganti Guru Tanpa Biaya", "Materi Disesuaikan dengan Level & Tujuan Murid") ditambahkan ke 4 paket privat (Basic/Pro/Premium/Platinum), Group dikecualikan. Title tag & meta description landing page diperbarui (`layouts/app.blade.php`). File: `Murid.php`, `TransaksiService.php`, `pages/home.blade.php`, `layouts/app.blade.php`. | Owner dapat opsi paket kelas kecil lebih murah untuk ditawarkan. Validasi & dropdown admin (murid, transaksi) otomatis ikut karena loop dari konstanta. Tidak ada breaking change, tidak ada perubahan skema DB/endpoint/service flow. |
 | 2026-07-14 | Auto-select Paket di Modal Pendaftaran (Landing Page) | Tombol "Pilih Paket" di tiap card pricing (`pages/home.blade.php`) sekarang memanggil `openRegister('Basic'\|'Pro'\|'Premium'\|'Platinum')` alih-alih `openRegister()` polos. Fungsi `openRegister(selectedPackage = null)` di-set value `<select id="regPackage">` setelah `reset()` kalau parameter terisi. Tombol Daftar lain (navbar/hero/CTA) tetap `openRegister()` tanpa argumen, behavior lama tidak berubah. Satu file saja yang diubah, tanpa sentuh endpoint/validasi/DB. | User yang klik dari card langsung dapat Paket ter-pre-fill di modal, tetap bisa ganti manual sebelum submit. Tidak ada breaking change. |
 | 2026-07-14 | Manajemen User — tab Admin (CRUD nyata, AJAX) | Modul baru CRUD akun Admin/Super Admin (fokus HANYA tab Admin, tab Guru/Murid masuk todo). Tabel `users` dapat kolom baru `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` (migration `add_admin_management_fields_to_users_table`). Role & status pakai konstanta (`User::ROLE_SUPER_ADMIN`/`ROLE_ADMIN`, `STATUS_ACTIVE`/`STATUS_INACTIVE`), bukan hardcode string. List (search nama/email + filter role + filter status + pagination + sort terbaru + reload async), tambah/edit via modal (password opsional saat edit + `confirmed`), soft delete via **modal konfirmasi custom** (beda dari native `confirm()` di Murid/Transaksi — requirement eksplisit minta flow ini). Business rule di `UserService` (bukan Gate/Policy global, scoped ke modul ini saja — dikonfirmasi owner krn sebelumnya role/permission system statusnya "keputusan tertunda"): hanya Super Admin bisa CRUD Admin, Super Admin tidak bisa hapus/nonaktifkan/ubah role akun sendiri, sistem selalu menjaga minimal 1 Super Admin aktif. Tambahan di luar requirement awal (didokumentasikan transparan): login diblokir kalau `status` Nonaktif, `last_login_at` di-update otomatis tiap login sukses. Seeder `Test User` otomatis jadi Super Admin aktif. File baru: `UserService`, `AdminUserController`, `StoreAdminUserRequest`/`UpdateAdminUserRequest`, `admin/user.blade.php`, `admin/partials/user-list.blade.php`, `admin-user.css`. | Owner (Super Admin) bisa kelola akun Admin lain dari UI — sebelumnya cuma 1 akun seeder tanpa role sama sekali. **Migration belum dijalankan di lokal** — perlu `php artisan migrate` manual sebelum dites. |
 | 2026-07-13 | Admin Transaksi (Manajemen Transaksi) | Modul baru verifikasi manual pembayaran (transfer bank), menggantikan view mock `admin/transaksi.blade.php`. Tabel baru `transaksi` + `transaksi_activities` (audit trail), skema future-proof utk payment gateway (`gateway_provider`/`gateway_transaction_id`/`gateway_payload`, belum dipakai). Invoice auto-generate `INV-00000001` dari id. Transaksi auto-dibuat saat pendaftaran publik (`TransaksiService::createFromMurid()`, nominal dari mapping harga paket landing page, dikonfirmasi owner). Dashboard summary 4 kartu + tab filter status + filter bar (search/paket/metode/tanggal), indikator transaksi belum dibuka (`opened_at`), modal Detail (info murid+transaksi, catatan internal editable, bukti transfer preview/lihat/download, histori aktivitas), modal Verifikasi (upload bukti wajib + catatan opsional → status Berhasil + murid auto jadi `Murid::STATUS_AKTIF` baru, dikonfirmasi owner), aksi Tolak (tambahan di luar requirement awal, supaya tab "Ditolak" bisa tercapai). Bukti transfer disimpan disk `local` privat, nama file UUID. File baru: `Transaksi`, `TransaksiActivity`, `TransaksiService`, `AdminTransaksiController`, `VerifyTransaksiRequest`/`UpdateTransaksiCatatanRequest`, `admin/partials/transaksi-list.blade.php`. Route `admin.transaksi` (closure) → `admin.transaksi.index` (RESTful + sub-routes), sidebar & section-tabs disesuaikan. Auto-create transaksi utk murid tambah manual admin masuk `docs/todo.md` (belum di fase ini). | Admin bisa verifikasi pembayaran transfer manual nyata dari dashboard (sebelumnya mock dummy). Migration `create_transaksi_table` & `create_transaksi_activities_table` **sudah dijalankan** owner — testing fungsional masih menyusul. Murid punya status baru `Aktif`. Route name lama `admin.transaksi` (closure mock) tidak ada lagi. |
@@ -591,8 +593,8 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 7. Validasi selalu via Form Request; controller tipis.
 8. Tabel inti: `murid` (singular), `referral_agents`, `admin_settings`, `visitor_logs`, `users` (dapat kolom `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` sejak 2026-07-14).
 9. `Murid` status baru selalu `'Daftar'`. Status `'Aktif'` (baru, 2026-07-13) auto-diset saat transaksi pembayaran diverifikasi berhasil — status lain (Pending/Nonaktif/dst) masih belum ada.
-10. Level: Hijaiyah/Iqra/Tahsin/Tajwid/Hafalan. Paket: Basic/Pro/Premium/Platinum.
-11. Harga paket hanya teks di frontend, **tidak ada di DB**.
+10. Level: Hijaiyah/Iqra/Tahsin/Tajwid/Hafalan. Paket: Group/Basic/Pro/Premium/Platinum (Group ditambah 2026-07-15, bukan privat — kelas maks 8 murid).
+11. Harga paket hanya teks di frontend (+ mapping di `TransaksiService::PAKET_PRICES`), **tidak ada tabel di DB**.
 12. Nomor WA disimpan format `62xxxx`; dinormalisasi saat store.
 13. Pendaftaran publik `POST /daftar` → validasi → simpan → **JSON** (bukan redirect), throttle 10/menit.
 14. Referral: `?share_via=KODE` (param URL, konstanta `ReferralAgentService::QUERY_PARAM`) → cookie 30 hari → auto-resolve `referral_agent_id` saat daftar. Capture jalan di `/` & `/daftar`. **UI admin sudah ada** (`admin/referral-agent`, sejak 2026-07-13).
@@ -615,7 +617,7 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 31. SSOT dokumentasi = file ini; kalau konflik, **kode menang**, lalu perbarui file ini.
 32. Guardrail utama: no rename, no schema change tanpa izin, no terjemah istilah domain, no refactor spekulatif, no auto-billing, no RBAC global tanpa konfirmasi owner (role/permission masih scoped ke Manajemen User Admin saja).
 33. Owner = solo dev, komunikasi santai-akrab tapi profesional; kirim hanya file terdampak saat revisi.
-34. Fitur terakhir selesai: **Manajemen User — tab Admin** (CRUD nyata akun Admin/Super Admin, business rule role-scoped di `UserService`, minimal 1 Super Admin aktif dijaga sistem) (2026-07-14). **Migration belum dijalankan di lokal** — perlu `php artisan migrate` manual sebelum dites.
+34. Fitur terakhir selesai: **Revisi Landing Page Paket Pengajian — paket Group** (Rp150K/bulan, maks 8 murid, masuk `PAKET_OPTIONS`/`PAKET_PRICES`, benefit baru di paket privat, title/meta landing page diperbarui) (2026-07-15). Tidak ada manual task tersisa (bukan schema/migration).
 35. Tabel baru/berubah: `transaksi` & `transaksi_activities` (2026-07-13, invoice auto-generate, nominal dari mapping harga paket, future-proof utk payment gateway). `users` dapat kolom baru `role`/`status`/`last_login_at`/`created_by`/`updated_by`/`deleted_at` (2026-07-14). Murid dapat status baru `Aktif` (auto-set saat verifikasi berhasil).
 
 ## Server Specs

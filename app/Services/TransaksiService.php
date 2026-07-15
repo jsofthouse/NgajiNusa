@@ -22,6 +22,7 @@ class TransaksiService
      * Kalau nanti ada tabel harga sungguhan, cukup ganti sumber array ini.
      */
     private const PAKET_PRICES = [
+        'Group' => 150_000,
         'Basic' => 300_000,
         'Pro' => 550_000,
         'Premium' => 800_000,

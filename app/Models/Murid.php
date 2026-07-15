@@ -43,6 +43,7 @@ class Murid extends Model
     ];
 
     public const PAKET_OPTIONS = [
+        'Group',
         'Basic',
         'Pro',
         'Premium',

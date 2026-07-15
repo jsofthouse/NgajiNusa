@@ -136,6 +136,21 @@
                 <p>Sesuaikan dengan kebutuhan dan target belajar Anda.</p>
             </div>
             <div class="pricing-grid">
+                <!-- Paket 0 (Group) -->
+                <div class="pricing-card">
+                    <h4>Group</h4>
+                    <div class="price">Rp 150K <span>/ bulan</span></div>
+                    <div class="sub">8 sesi per bulan</div>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Maksimal 8 murid dalam 1 kelas</li>
+                        <li><i class="fas fa-check"></i> 8x pertemuan 60 menit</li>
+                        <li><i class="fas fa-check"></i> Guru bersertifikat</li>
+                        <li><i class="fas fa-check"></i> Laporan progres</li>
+                        <li><i class="fas fa-check"></i> Link Zoom otomatis</li>
+                    </ul>
+                    <a href="#" class="btn-primary" onclick="openRegister('Group')">Pilih Paket</a>
+                </div>
+
                 <!-- Paket 1 -->
                 <div class="pricing-card">
                     <h4>Basic</h4>
@@ -146,6 +161,9 @@
                         <li><i class="fas fa-check"></i> Guru bersertifikat</li>
                         <li><i class="fas fa-check"></i> Laporan progres</li>
                         <li><i class="fas fa-check"></i> Link Zoom otomatis</li>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
+                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
+                        <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Basic')">Pilih Paket</a>
                 </div>
@@ -163,6 +181,9 @@
                         <li><i class="fas fa-check"></i> Jadwal fleksibel</li>
                         <li><i class="fas fa-check"></i> Notifikasi WA</li>
                         <li><i class="fas fa-check"></i> Sertifikat level</li>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
+                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
+                        <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Pro')">Pilih Paket</a>
                 </div>
@@ -179,6 +200,9 @@
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
+                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
+                        <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Premium')">Pilih Paket</a>
                 </div>
@@ -195,6 +219,9 @@
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
                         <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
+                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
+                        <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Platinum')">Pilih Paket</a>
                 </div>
@@ -455,6 +482,7 @@
                     <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:4px;">Pilih Paket</label>
                     <select id="regPackage" required
                         style="width:100%;padding:14px 16px;border:2px solid #e0e8e0;border-radius:var(--radius-sm);font-size:1rem;background:var(--white);">
+                        <option value="Group">Group - Rp 150K/bulan (8 sesi, maks 8 murid)</option>
                         <option value="Basic">Basic - Rp 300K/bulan (4 sesi)</option>
                         <option value="Pro" selected>Pro - Rp 550K/bulan (8 sesi) ⭐</option>
                         <option value="Premium">Premium - Rp 800K/bulan (12 sesi)</option>

@@ -8,9 +8,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Title & Description (SEO) -->
-    <title>NgajiNusa - Kursus Ngaji Online Bersama Guru Bersertifikat</title>
+    <title>NgajiNusa - Belajar Ngaji Online untuk Anak & Dewasa</title>
     <meta name="description"
-        content="Belajar ngaji online mudah & fleksibel bersama 50+ guru bersertifikat. Tahsin, tajwid, hafalan via Zoom. Pantau progres belajar real-time. Daftar sekarang!">
+        content="Belajar Ngaji Online mudah & fleksibel, kapanpun & dimanapun via Zoom.">
     <meta name="keywords"
         content="belajar ngaji online, kursus ngaji, les ngaji online, tahsin online, tajwid online, hafalan quran online, guru ngaji online, ngaji via zoom">
     <meta name="robots" content="index, follow">
@@ -21,9 +21,9 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ngajinusa.com/">
     <meta property="og:site_name" content="NgajiNusa">
-    <meta property="og:title" content="NgajiNusa - Kursus Ngaji Online Bersama Guru Bersertifikat">
+    <meta property="og:title" content="NgajiNusa - Belajar Ngaji Online untuk Anak & Dewasa">
     <meta property="og:description"
-        content="Belajar ngaji online mudah & fleksibel bersama 50+ guru bersertifikat. Tahsin, tajwid, hafalan via Zoom. Pantau progres belajar real-time.">
+        content="Belajar Ngaji Online mudah & fleksibel, kapanpun & dimanapun via Zoom.">
     <meta property="og:image" content="https://ngajinusa.com/images/og-image.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -32,9 +32,9 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="NgajiNusa - Kursus Ngaji Online Bersama Guru Bersertifikat">
+    <meta name="twitter:title" content="NgajiNusa - Belajar Ngaji Online untuk Anak & Dewasa">
     <meta name="twitter:description"
-        content="Belajar ngaji online mudah & fleksibel bersama 50+ guru bersertifikat. Tahsin, tajwid, hafalan via Zoom.">
+        content="Belajar Ngaji Online mudah & fleksibel, kapanpun & dimanapun via Zoom.">
     <meta name="twitter:image" content="https://ngajinusa.com/images/og-image.jpg">
 
     <!-- Favicon -->
