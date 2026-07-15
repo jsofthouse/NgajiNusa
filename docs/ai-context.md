@@ -623,7 +623,8 @@ _Setiap fitur baru selesai: tambahkan baris di sini + perbarui §11._
 - VPS: MS 4.2, Biznet Gio
 - OS: Ubuntu 26.04
 - Resource: 2 vCPU, 4GB RAM, 60GB SSD
-- Stack: Nginx, PHP 8.3-FPM, MariaDB
+- Stack: Nginx 1.28.3, PHP 8.5-FPM, MariaDB 11.8.6 (koreksi versi PHP-FPM dari 8.3 → 8.5, final-validated 2026-07-15)
+- Monitoring: Netdata Community v2.10.0-771-nightly, dashboard `https://monitor.ngajinusa.com` (reverse proxy Nginx, bind `127.0.0.1:19999`, Cloudflare Access-gated, port tidak diekspos publik). Final validation instalasi selesai 2026-07-15 (collector Nginx/PHP-FPM/MariaDB verified, security hardening, bug fix Host header PHP-FPM) — detail lengkap di `docs/deployment.md`.
 
 ---
 
