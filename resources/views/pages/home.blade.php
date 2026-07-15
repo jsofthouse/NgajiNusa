@@ -161,7 +161,6 @@
                         <li><i class="fas fa-check"></i> 4x pertemuan 60 menit</li>
                         <li><i class="fas fa-check"></i> Guru bersertifikat</li>
                         <li><i class="fas fa-check"></i> Laporan progres</li>
-                        <li><i class="fas fa-check"></i> Link Zoom otomatis</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
@@ -181,7 +180,6 @@
                         <li><i class="fas fa-check"></i> Laporan progres detail</li>
                         <li><i class="fas fa-check"></i> Jadwal fleksibel</li>
                         <li><i class="fas fa-check"></i> Notifikasi WA</li>
-                        <li><i class="fas fa-check"></i> Sertifikat level</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
@@ -199,7 +197,6 @@
                         <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid)</li>
                         <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
-                        <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
@@ -218,7 +215,6 @@
                         <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid)</li>
                         <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
-                        <li><i class="fas fa-check"></i> Sertifikat + Piagam</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
                         <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
