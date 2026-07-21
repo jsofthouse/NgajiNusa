@@ -1,5 +1,33 @@
 # TO DO
 
+## Revisi Tertunda — Rapat Pra-Rilis (2026-07-21, belum dieksekusi)
+
+> Semua poin di bawah statusnya **PENDING** — hasil rapat pra-rilis, belum ada satu pun kode yang diubah. Rujuk `docs/ai-context.md` §18 (entry 2026-07-21) untuk ringkasan pencatatan.
+
+### Landing Page (`resources/views/pages/home.blade.php`)
+
+- [ ] Section Fitur: "Guru Bersertifikat" → "Guru Bersertifikat/Lulusan Ponpes" + tambah deskripsi "lulusan pondok pesantren".
+- [ ] Section Fitur: "Bayar Mudah" — hapus opsi e-wallet, ganti jadi "Pembayaran via QRIS atau transfer bank".
+- [ ] Section Fitur: "Sertifikat" → "Sertifikat Kelulusan".
+- [ ] Section Paket: tambah paket baru **Diamond** (Rp1,5jt/bulan) — isi sama seperti Premium + opsi "Guru pilihan (tahsin/tajwid/qori)". **BELUM FIX:** jumlah sesi Diamond — apakah 12x sama seperti Premium, atau beda. Tunggu keputusan owner.
+- [ ] Footer — Sosmed: hapus YouTube, sisakan Instagram + WhatsApp.
+- [ ] Footer — Layanan: urutan baru Iqra, Tahsin, Tajwid, Qori — "Hafalan" dihapus dari list ini (catatan: `Murid::LEVEL_OPTIONS` di backend TIDAK berubah, ini murni tampilan footer).
+- [ ] Tombol CTA "Daftar Sekarang": **BELUM FIX** — diminta font putih, tapi background tombol ini juga putih (jadi gak kebaca). Kemungkinan yang perlu diubah bg-nya, bukan cuma warna font. Perlu klarifikasi ulang ke Janoko sebelum eksekusi.
+- [ ] Header/Hero: hero-stats (Murid Aktif 1.000+, Guru Bersertifikasi 50+, Rating 4.9) di-hide sementara — dimunculkan lagi kalau data murid sudah cukup banyak dan valid.
+- [ ] Testimoni: ditahan dulu, dummy testimonial tetap dipakai sampai ada testimoni asli dari murid.
+- [ ] Section baru — Alur/Cara Daftar (infografis 4 langkah): (1) Isi Formulir Pendaftaran — pilih paket & lengkapi data diri, (2) Silakan kirim chat ke WA Admin — Admin akan menindaklanjuti proses pendaftaran Anda, (3) Bayar via QRIS/Transfer — sesuai paket yang dipilih, (4) Kelas Mengaji Dimulai — link Zoom otomatis dikirim tiap sesi. **BELUM FIX:** posisi section ini di landing page (opsi: setelah Fitur, sebelum Paket).
+
+### Backend Fase 2+ (belum ada implementasi — catatan roadmap)
+
+- [ ] Referral — Komisi Agent: komisi 5% dari harga paket (nominal sementara, belum fix). Trigger perhitungan: saat pembayaran murid masuk DAN terverifikasi di sistem (selaras alur verifikasi manual Transaksi yang sudah ada).
+- [ ] Opsional/wacana jangka panjang (bukan requirement pasti): skema multi-line marketing (referral berjenjang) — masih wacana, masuk sebagai opsi jangka panjang saja.
+
+### Keputusan Tertunda / Perlu Diskusi Lanjut
+
+- [ ] E-wallet toggle di `resources/views/admin/pengaturan.blade.php` — masih aktif. Belum diputuskan apakah ikut dimatikan menyesuaikan revisi landing page (poin "Bayar Mudah" di atas), atau dibiarkan aktif untuk kanal lain.
+
+---
+
 ## Prioritas Tinggi
 
 - [ ] Admin Murid: Export berdasarkan filter/search (saat ini `AdminMuridController@export` selalu export seluruh data, tanpa memperhatikan search yang aktif di list).
