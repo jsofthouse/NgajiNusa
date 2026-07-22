@@ -408,12 +408,6 @@
                             <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:0.9rem;">
                                 <input type="checkbox" checked /> Transfer Bank
                             </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:0.9rem;">
-                                <input type="checkbox" checked /> E-Wallet
-                            </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:0.9rem;">
-                                <input type="checkbox" /> Kartu Kredit
-                            </label>
                         </div>
                     </div>
                 </div>
