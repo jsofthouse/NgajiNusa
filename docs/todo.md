@@ -1,30 +1,37 @@
 # TO DO
 
-## Revisi Tertunda — Rapat Pra-Rilis (2026-07-21, belum dieksekusi)
+## Revisi Landing Page & Pengaturan — Rapat Pra-Rilis (2026-07-21 + keputusan susulan 2026-07-22) — SELESAI DIEKSEKUSI 2026-07-22
 
-> Semua poin di bawah statusnya **PENDING** — hasil rapat pra-rilis, belum ada satu pun kode yang diubah. Rujuk `docs/ai-context.md` §18 (entry 2026-07-21) untuk ringkasan pencatatan.
+> Semua poin landing page & pengaturan di bawah sudah dieksekusi. Referral Komisi Agent (Fase 2+) masih PENDING, terpisah — lihat section di bawah.
 
 ### Landing Page (`resources/views/pages/home.blade.php`)
 
-- [ ] Section Fitur: "Guru Bersertifikat" → "Guru Bersertifikat/Lulusan Ponpes" + tambah deskripsi "lulusan pondok pesantren".
-- [ ] Section Fitur: "Bayar Mudah" — hapus opsi e-wallet, ganti jadi "Pembayaran via QRIS atau transfer bank".
-- [ ] Section Fitur: "Sertifikat" → "Sertifikat Kelulusan".
-- [ ] Section Paket: tambah paket baru **Diamond** (Rp1,5jt/bulan) — isi sama seperti Premium + opsi "Guru pilihan (tahsin/tajwid/qori)". **BELUM FIX:** jumlah sesi Diamond — apakah 12x sama seperti Premium, atau beda. Tunggu keputusan owner.
-- [ ] Footer — Sosmed: hapus YouTube, sisakan Instagram + WhatsApp.
-- [ ] Footer — Layanan: urutan baru Iqra, Tahsin, Tajwid, Qori — "Hafalan" dihapus dari list ini (catatan: `Murid::LEVEL_OPTIONS` di backend TIDAK berubah, ini murni tampilan footer).
-- [ ] Tombol CTA "Daftar Sekarang": **BELUM FIX** — diminta font putih, tapi background tombol ini juga putih (jadi gak kebaca). Kemungkinan yang perlu diubah bg-nya, bukan cuma warna font. Perlu klarifikasi ulang ke Janoko sebelum eksekusi.
-- [ ] Header/Hero: hero-stats (Murid Aktif 1.000+, Guru Bersertifikasi 50+, Rating 4.9) di-hide sementara — dimunculkan lagi kalau data murid sudah cukup banyak dan valid.
-- [ ] Testimoni: ditahan dulu, dummy testimonial tetap dipakai sampai ada testimoni asli dari murid.
-- [ ] Section baru — Alur/Cara Daftar (infografis 4 langkah): (1) Isi Formulir Pendaftaran — pilih paket & lengkapi data diri, (2) Silakan kirim chat ke WA Admin — Admin akan menindaklanjuti proses pendaftaran Anda, (3) Bayar via QRIS/Transfer — sesuai paket yang dipilih, (4) Kelas Mengaji Dimulai — link Zoom otomatis dikirim tiap sesi. **BELUM FIX:** posisi section ini di landing page (opsi: setelah Fitur, sebelum Paket).
+- [x] Section Fitur: "Guru Bersertifikat" → "Guru Bersertifikat/Lulusan Ponpes" + tambah deskripsi "lulusan pondok pesantren".
+- [x] Section Fitur: "Bayar Mudah" — hapus opsi e-wallet, ganti jadi "Pembayaran via QRIS atau transfer bank".
+- [x] Section Fitur: "Sertifikat" → "Sertifikat Kelulusan".
+- [x] Section Paket: tambah paket baru **Diamond** (Rp1,5jt/bulan) — isi sama seperti Premium + opsi "Guru pilihan (tahsin/tajwid/qori)". Jumlah sesi: **sama seperti Premium** (keputusan owner 2026-07-22).
+- [x] Footer — Sosmed: hapus YouTube, sisakan Instagram + WhatsApp.
+- [x] Footer — Layanan: urutan baru Iqra, Tahsin, Tajwid, Qori — "Hafalan" dihapus dari list ini (catatan: `Murid::LEVEL_OPTIONS` di backend TIDAK berubah, ini murni tampilan footer).
+- [x] Tombol CTA "Daftar Sekarang": background tetap hijau, ubah warna font jadi putih (keputusan owner 2026-07-22). Catatan eksekusi: CSS `.cta .btn-primary` ternyata override bg jadi putih + font hijau (kebalikan asumsi awal) — kalau dituruti mentah-mentah font putih di atas bg putih jadi tidak kelihatan. Di-fix dengan inline style `background:var(--primary);color:var(--white)` di tombol tersebut supaya hasil akhirnya persis sesuai maksud owner: bg hijau, font putih.
+- [x] Header/Hero: hero-stats (Murid Aktif 1.000+, Guru Bersertifikasi 50+, Rating 4.9) di-hide sementara (inline `style="display:none"` — bukan `d-none` karena landing page ternyata tidak load Bootstrap CSS sama sekali, cek `layouts/app.blade.php`).
+- [x] Testimoni: no touch, tetap dummy.
+- [x] Section baru — Alur/Cara Daftar (infografis 4 langkah), posisi setelah Paket sebelum Testimonial, reuse class `.features`/`.features-grid`/`.feature-card` existing (konsisten visual, tanpa nambah CSS baru).
 
-### Backend Fase 2+ (belum ada implementasi — catatan roadmap)
+### Paket Diamond (Backend)
+
+- [x] `Murid::PAKET_OPTIONS` — tambah `'Diamond'`.
+- [x] `TransaksiService::PAKET_PRICES` — tambah `'Diamond' => 1_500_000`.
+- [x] Validasi (`StoreMuridRequest`, `StoreAdminMuridRequest`, `UpdateAdminMuridRequest`) — otomatis ikut karena rule `in:` loop dari `Murid::PAKET_OPTIONS`, tidak ada hardcode.
+- [x] Dropdown admin murid (`admin/murid.blade.php`) — otomatis ikut karena `@foreach (\App\Models\Murid::PAKET_OPTIONS as $paket)`, tidak ada hardcode.
+
+### Pengaturan (`resources/views/admin/pengaturan.blade.php`)
+
+- [x] E-wallet toggle — dihapus, sisa 2 metode: Transfer Bank dan QRIS (keputusan owner 2026-07-22). Checkbox "Kartu Kredit" (unchecked, belum aktif) ikut dihapus supaya benar-benar sisa 2 sesuai keputusan. Halaman ini murni mock UI (route closure, no controller/model), tidak ada const metode pembayaran backend yang perlu disesuaikan.
+
+### Backend Fase 2+ (belum ada implementasi — catatan roadmap, TIDAK termasuk scope eksekusi 2026-07-22)
 
 - [ ] Referral — Komisi Agent: komisi 5% dari harga paket (nominal sementara, belum fix). Trigger perhitungan: saat pembayaran murid masuk DAN terverifikasi di sistem (selaras alur verifikasi manual Transaksi yang sudah ada).
 - [ ] Opsional/wacana jangka panjang (bukan requirement pasti): skema multi-line marketing (referral berjenjang) — masih wacana, masuk sebagai opsi jangka panjang saja.
-
-### Keputusan Tertunda / Perlu Diskusi Lanjut
-
-- [ ] E-wallet toggle di `resources/views/admin/pengaturan.blade.php` — masih aktif. Belum diputuskan apakah ikut dimatikan menyesuaikan revisi landing page (poin "Bayar Mudah" di atas), atau dibiarkan aktif untuk kanal lain.
 
 ---
 
