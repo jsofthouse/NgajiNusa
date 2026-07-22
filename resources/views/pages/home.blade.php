@@ -15,7 +15,7 @@
                 <li><a href="#paket">Paket</a></li>
                 {{-- <li><a href="#dashboard">Dashboard</a></li> --}}
                 <li><a href="#testimoni">Testimoni</a></li>
-                <li><a href="#" class="btn-primary" onclick="openRegister()"><i class="fas fa-user-plus"></i>
+                <li><a href="#" class="btn-primary" style="color:var(--white);" onclick="openRegister()"><i class="fas fa-user-plus"></i>
                         Daftar</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
@@ -48,7 +48,7 @@
                         Lihat Paket
                     </a>
                 </div>
-                <div class="hero-stats">
+                <div class="hero-stats" style="display:none;">
                     <div class="stat">
                         <div class="number">1.000+</div>
                         <div class="label">Murid Aktif</div>
@@ -95,8 +95,8 @@
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="icon"><i class="fas fa-user-graduate"></i></div>
-                    <h4>Guru Bersertifikat</h4>
-                    <p>Belajar dengan ustadz/ustadzah berpengalaman dan bersertifikasi.</p>
+                    <h4>Guru Bersertifikat/Lulusan Ponpes</h4>
+                    <p>Belajar dengan ustadz/ustadzah berpengalaman, bersertifikasi, dan lulusan pondok pesantren.</p>
                 </div>
                 <div class="feature-card">
                     <div class="icon"><i class="fas fa-video"></i></div>
@@ -116,11 +116,11 @@
                 <div class="feature-card">
                     <div class="icon"><i class="fas fa-credit-card"></i></div>
                     <h4>Bayar Mudah</h4>
-                    <p>Pembayaran via QRIS, transfer, atau e-wallet.</p>
+                    <p>Pembayaran via QRIS atau transfer bank.</p>
                 </div>
                 <div class="feature-card">
                     <div class="icon"><i class="fas fa-certificate"></i></div>
-                    <h4>Sertifikat</h4>
+                    <h4>Sertifikat Kelulusan</h4>
                     <p>Dapatkan sertifikat setelah menyelesaikan level tertentu.</p>
                 </div>
             </div>
@@ -220,6 +220,57 @@
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Platinum')">Pilih Paket</a>
+                </div>
+
+                <!-- Paket 5 -->
+                <div class="pricing-card">
+                    <h4>Diamond</h4>
+                    <div class="price">Rp 1,5jt <span>/ bulan</span></div>
+                    <div class="sub">12 sesi + konsultasi</div>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
+                        <li><i class="fas fa-check"></i> 12x pertemuan 60 menit</li>
+                        <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid/qori)</li>
+                        <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
+                        <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
+                        <li><i class="fas fa-check"></i> Prioritas jadwal</li>
+                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
+                        <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
+                    </ul>
+                    <a href="#" class="btn-primary" onclick="openRegister('Diamond')">Pilih Paket</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ALUR / CARA DAFTAR ===== -->
+    <section class="features" id="alur">
+        <div class="container">
+            <div class="section-header">
+                <span class="badge"><i class="fas fa-list-ol"></i> Cara Daftar</span>
+                <h2>Alur Pendaftaran</h2>
+                <p>4 langkah mudah untuk mulai belajar mengaji bersama NgajiNusa.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon"><i class="fas fa-file-alt"></i></div>
+                    <h4>1. Isi Formulir Pendaftaran</h4>
+                    <p>Pilih paket & lengkapi data diri.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon"><i class="fab fa-whatsapp"></i></div>
+                    <h4>2. Kirim Chat ke WA Admin</h4>
+                    <p>Admin akan menindaklanjuti proses pendaftaran Anda.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon"><i class="fas fa-qrcode"></i></div>
+                    <h4>3. Bayar via QRIS/Transfer</h4>
+                    <p>Sesuai paket yang dipilih.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <h4>4. Kelas Mengaji Dimulai</h4>
+                    <p>Link Zoom otomatis dikirim tiap sesi.</p>
                 </div>
             </div>
         </div>
@@ -385,7 +436,7 @@
         <div class="container">
             <h2>Siap Memulai Perjalanan Ngaji?</h2>
             <p>Daftar sekarang dan dapatkan guru ngaji terbaik yang siap membimbing Anda.</p>
-            <a href="#" class="btn-primary" onclick="openRegister()">
+            <a href="#" class="btn-primary" style="background:var(--primary);color:var(--white);" onclick="openRegister()">
                 <i class="fas fa-user-plus"></i> Daftar Sekarang
             </a>
         </div>
@@ -401,16 +452,15 @@
                 </p>
                 <div style="display:flex;gap:12px;margin-top:12px;font-size:1.2rem;">
                     <a href="#"><i class="fab fa-instagram"></i></a>
-                    <a href="#"><i class="fab fa-youtube"></i></a>
                     <a href="#"><i class="fab fa-whatsapp"></i></a>
                 </div>
             </div>
             <div>
                 <h4>Layanan</h4>
+                <a href="#">Iqra</a>
                 <a href="#">Tahsin</a>
                 <a href="#">Tajwid</a>
-                <a href="#">Hafalan</a>
-                <a href="#">Iqra</a>
+                <a href="#">Qori</a>
             </div>
             <div>
                 <h4>Perusahaan</h4>
@@ -483,6 +533,7 @@
                         <option value="Pro" selected>Pro - Rp 550K/bulan (8 sesi) ⭐</option>
                         <option value="Premium">Premium - Rp 800K/bulan (12 sesi)</option>
                         <option value="Platinum">Platinum - Rp 1,2jt/bulan (20 sesi)</option>
+                        <option value="Diamond">Diamond - Rp 1,5jt/bulan (12 sesi)</option>
                     </select>
                 </div>
                 <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:16px;">
