@@ -15,7 +15,8 @@
                 <li><a href="#paket">Paket</a></li>
                 {{-- <li><a href="#dashboard">Dashboard</a></li> --}}
                 <li><a href="#testimoni">Testimoni</a></li>
-                <li><a href="#" class="btn-primary" style="color:var(--white);" onclick="openRegister()"><i class="fas fa-user-plus"></i>
+                <li><a href="#" class="btn-primary" style="color:var(--white);" onclick="openRegister()"><i
+                            class="fas fa-user-plus"></i>
                         Daftar</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
@@ -228,13 +229,13 @@
                     <div class="price">Rp 1,5jt <span>/ bulan</span></div>
                     <div class="sub">12 sesi + konsultasi</div>
                     <ul>
+                        <li><i class="fas fa-check"></i> <b>Khusus belajar Qori</b></li>
                         <li><i class="fas fa-check"></i> Privat 1 Murid 1 Guru</li>
                         <li><i class="fas fa-check"></i> 12x pertemuan 60 menit</li>
-                        <li><i class="fas fa-check"></i> Guru pilihan (tahsin/tajwid/qori)</li>
+                        <li><i class="fas fa-check"></i> Guru pilihan (Qori)</li>
                         <li><i class="fas fa-check"></i> Konsultasi mingguan</li>
                         <li><i class="fas fa-check"></i> Rekomendasi belajar</li>
                         <li><i class="fas fa-check"></i> Prioritas jadwal</li>
-                        <li><i class="fas fa-check"></i> Garansi Ganti Guru Tanpa Biaya</li>
                         <li><i class="fas fa-check"></i> Materi Disesuaikan dengan Level & Tujuan Murid</li>
                     </ul>
                     <a href="#" class="btn-primary" onclick="openRegister('Diamond')">Pilih Paket</a>
@@ -436,7 +437,8 @@
         <div class="container">
             <h2>Siap Memulai Perjalanan Ngaji?</h2>
             <p>Daftar sekarang dan dapatkan guru ngaji terbaik yang siap membimbing Anda.</p>
-            <a href="#" class="btn-primary" style="background:var(--primary);color:var(--white);" onclick="openRegister()">
+            <a href="#" class="btn-primary" style="background:var(--primary);color:var(--white);"
+                onclick="openRegister()">
                 <i class="fas fa-user-plus"></i> Daftar Sekarang
             </a>
         </div>
