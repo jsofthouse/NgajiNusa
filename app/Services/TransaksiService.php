@@ -27,6 +27,7 @@ class TransaksiService
         'Pro' => 550_000,
         'Premium' => 800_000,
         'Platinum' => 1_200_000,
+        'Diamond' => 1_500_000,
     ];
 
     /**

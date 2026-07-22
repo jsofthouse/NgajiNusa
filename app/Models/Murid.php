@@ -48,6 +48,7 @@ class Murid extends Model
         'Pro',
         'Premium',
         'Platinum',
+        'Diamond',
     ];
 
     public const STATUS_DAFTAR = 'Daftar';
